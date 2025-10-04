@@ -141,6 +141,7 @@ const PortfolioPage: React.FC = () => {
 
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
 
+    // Анимация баланса
     useEffect(() => {
         let start = animatedBalance;
         const end = balance;
@@ -175,6 +176,7 @@ const PortfolioPage: React.FC = () => {
         return null;
     };
 
+    // Сортировка
     const requestSort = (key: string) => {
         let direction: "asc" | "desc" = "asc";
         if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {

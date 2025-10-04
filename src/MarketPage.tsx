@@ -97,9 +97,9 @@ const GiftCardWrapper = styled.div`
 
 const GiftImage = styled.img`
   width: 100%;
-  height: auto;       /* высота подстраивается под картинку */
-  max-height: 300px;  /* ограничение, чтобы карточка не была слишком высокой */
-  object-fit: contain; /* картинка целиком, без обрезки */
+  height: auto;
+  max-height: 300px;
+  object-fit: contain;
   border-radius: 15px;
   margin-bottom: 12px;
 `;

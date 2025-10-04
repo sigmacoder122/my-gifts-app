@@ -150,7 +150,7 @@ const InvestmentPage = () => {
                 </StatItem>
                 <StatItem>
                     <div>101</div>
-                    <div>Куплено ></div>
+                    <div>Куплено</div>
                 </StatItem>
                 <StatItem>
                     <div>146</div>

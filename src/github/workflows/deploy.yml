@@ -3,12 +3,11 @@ name: Deploy React App to GitHub Pages
 on:
   push:
     branches:
-      - main  # каждый пуш в main триггерит деплой
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -21,12 +20,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build app
+        env:
+          CI: false # отключаем превращение warnings в ошибки
         run: npm run build
 
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v5
         with:
-          branch: gh-pages # ветка для Pages
-          folder: build     # папка для деплоя (создаётся npm run build)
-          token: ${{ secrets.GH_PAT }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build

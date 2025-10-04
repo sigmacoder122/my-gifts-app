@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import ProfilePage from "./ProfilePage";
 import MarketPage from "./MarketPage";
 import PortfolioPage from "./PortfolioPage";
-import GiftsStatsPage from "./GiftsStatsPage"; // 👈 добавили страницу статистики
+import GiftsStatsPage from "./GiftsStatsPage"; // Статистика подарков
 
 type Page = "profile" | "market" | "portfolio" | "gifts-stats";
 
@@ -27,14 +27,14 @@ const App: React.FC = () => {
     const pages: { key: Page; label: string }[] = [
         { key: "market", label: "Маркет" },
         { key: "portfolio", label: "Мой портфель" },
-        { key: "gifts-stats", label: "Статистика подарков" }, // 👈 заменили Сезоны
+        { key: "gifts-stats", label: "Статистика подарков" },
         { key: "profile", label: "Профиль" },
     ];
 
     return (
-        <div>
+        <div style={{ paddingBottom: "80px" }}>
             {renderPage()}
-            <div style={bottomNavStyle}>
+            <nav style={bottomNavStyle}>
                 {pages.map((p) => (
                     <NavButton
                         key={p.key}
@@ -44,13 +44,12 @@ const App: React.FC = () => {
                         {p.label}
                     </NavButton>
                 ))}
-            </div>
+            </nav>
         </div>
     );
 };
 
-// --- Стили ---
-
+// --- Стили навигации ---
 const bottomNavStyle: React.CSSProperties = {
     position: "fixed",
     bottom: 0,
