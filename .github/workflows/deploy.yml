@@ -3,17 +3,18 @@ name: Deploy React App to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - main   # измените, если ваша основная ветка имеет другое имя
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: '20'
 
@@ -22,11 +23,13 @@ jobs:
 
       - name: Build app
         env:
-          CI: false # отключаем превращение warnings в ошибки
+          CI: false   # отключаем превращение warnings в ошибки
         run: npm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          personal_token: ${{ secrets.GH_PAT }}   # ← использует твой PAT
           publish_dir: ./build
+          user_name: "github-actions[bot]"
+          user_email: "github-actions[bot]@users.noreply.github.com"
