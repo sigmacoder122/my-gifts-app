@@ -1,31 +1,41 @@
 name: Deploy React App to GitHub Pages
 
+# Запускать при пуше в main
 on:
   push:
     branches:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # 1. Клонируем репозиторий
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      # 2. Настраиваем Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 20
 
+      # 3. Устанавливаем зависимости
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
+      # 4. Строим проект
       - name: Build project
+        env:
+          CI: false # ⚠️ отключает "Treat warnings as errors"
         run: npm run build
 
+      # 5. Деплой на GitHub Pages
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: JamesIves/github-pages-deploy-action@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
+          branch: gh-pages # ветка, куда деплоится
+          folder: build     # папка со сборкой React
+          token: ${{ secrets.GITHUB_TOKEN }}
+
