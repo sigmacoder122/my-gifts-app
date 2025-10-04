@@ -3,7 +3,7 @@ name: Deploy React App to GitHub Pages
 on:
   push:
     branches:
-      - main  # деплой при пуше в main
+      - main  # каждый пуш в main триггерит деплой
 
 jobs:
   build-and-deploy:
@@ -16,20 +16,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build React app (skip ESLint errors)
-        run: |
-          # Временно отключаем CI=true, чтобы ESLint warnings не ломали билд
-          CI=false npm run build
+      - name: Build
+        run: npm run build
 
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4.7.3
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages       # ветка для GitHub Pages
-          folder: build          # папка с собранным приложением
-          clean: true            # очистка ветки перед деплоем
-          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages # ветка для Pages
+          folder: build     # папка для деплоя (создаётся npm run build)
+          token: ${{ secrets.GH_PAT }}
