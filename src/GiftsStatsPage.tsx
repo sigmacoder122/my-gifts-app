@@ -1,37 +1,183 @@
-import React from "react";
-import styled from "styled-components";
+import React, { useState } from "react";
+import styled, { keyframes } from "styled-components";
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    Tooltip as RechartsTooltip,
+    ResponsiveContainer,
+} from "recharts";
+import { gifts } from "./data/gifts"; // подарки 🎁
 
+// --- Анимации ---
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+// --- Стили ---
 const Container = styled.div`
-  background: #121212;
-  min-height: 100vh;
   padding: 20px;
+  padding-bottom: 90px;
+  background: #121212;
   color: #fff;
+  min-height: 100vh;
 `;
 
-const SeasonItem = styled.div`
+const Title = styled.h2`
+  font-size: 22px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #00aaff;
+`;
+
+const FilterRow = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+`;
+
+const FilterButton = styled.button<{ active: boolean }>`
+  background: ${(props) => (props.active ? "#00aaff" : "transparent")};
+  border: 2px solid #00aaff;
+  color: ${(props) => (props.active ? "#121212" : "#fff")};
+  font-weight: bold;
+  border-radius: 20px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    background: #00aaff;
+    color: #121212;
+    transform: scale(1.05);
+  }
+`;
+
+const GiftRow = styled.div`
+  display: flex;
+  align-items: center;
   background: #1e1e1e;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 15px;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  animation: ${fadeIn} 0.5s ease;
 `;
 
-const SeasonsPage: React.FC = () => {
-    const seasons = [
-        { name: "Весна 2025", info: "Специальные подарки и бонусы" },
-        { name: "Лето 2025", info: "Сезонные розыгрыши" },
-    ];
+const GiftIcon = styled.img`
+  width: 60px;
+  height: 60px;
+  object-fit: contain; // сохраняем пропорции
+  border-radius: 10px;
+  margin-right: 14px;
+`;
+
+const GiftName = styled.div`
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  flex: 0.8;
+`;
+
+const ChartBox = styled.div`
+  flex: 2;
+  height: 100px;
+`;
+
+const Growth = styled.div<{ positive: boolean }>`
+  font-size: 14px;
+  font-weight: bold;
+  margin-left: 10px;
+  color: ${(props) => (props.positive ? "#00ff66" : "#ff4444")};
+`;
+
+// --- Кастомный тултип ---
+const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div
+                style={{
+                    background: "#222",
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid #00aaff",
+                    fontSize: "12px",
+                }}
+            >
+                {payload[0].value.toFixed(2)} TON
+            </div>
+        );
+    }
+    return null;
+};
+
+// --- Компонент ---
+const GiftsStatsPage: React.FC = () => {
+    const [filter, setFilter] = useState<"all" | "up" | "down">("all");
+
+    const filteredGifts = gifts.filter((gift) => {
+        if (filter === "up") return gift.growth > 0;
+        if (filter === "down") return gift.growth < 0;
+        return true;
+    });
 
     return (
         <Container>
-            <h2>Сезоны</h2>
-            {seasons.map((s, idx) => (
-                <SeasonItem key={idx}>
-                    <div><strong>{s.name}</strong></div>
-                    <div>{s.info}</div>
-                </SeasonItem>
-            ))}
+            <Title>📊 Статистика подарков</Title>
+
+            {/* --- Фильтр --- */}
+            <FilterRow>
+                <FilterButton active={filter === "all"} onClick={() => setFilter("all")}>
+                    Все
+                </FilterButton>
+                <FilterButton active={filter === "up"} onClick={() => setFilter("up")}>
+                    Растущие
+                </FilterButton>
+                <FilterButton active={filter === "down"} onClick={() => setFilter("down")}>
+                    Падающие
+                </FilterButton>
+            </FilterRow>
+
+            {/* --- Список подарков --- */}
+            {filteredGifts.map((gift) => {
+                const chartData = [
+                    { day: "Пн", value: gift.price * 0.95 },
+                    { day: "Вт", value: gift.price * 1.05 },
+                    { day: "Ср", value: gift.price * 1.1 },
+                    { day: "Чт", value: gift.price * (1 + gift.growth / 100) },
+                    { day: "Пт", value: gift.price * (1 + gift.growth / 100 + 0.03) },
+                ];
+
+                return (
+                    <GiftRow key={gift.id}>
+                        <GiftIcon src={gift.img} alt={gift.name} />
+                        <GiftName>{gift.name}</GiftName>
+                        <ChartBox>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={chartData}>
+                                    <XAxis dataKey="day" stroke="#444" fontSize={10} />
+                                    <YAxis stroke="#444" fontSize={10} />
+                                    <RechartsTooltip content={<CustomTooltip />} />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="value"
+                                        stroke="#00aaff"
+                                        strokeWidth={3}
+                                        dot={false}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </ChartBox>
+                        <Growth positive={gift.growth >= 0}>
+                            {gift.growth >= 0 ? `+${gift.growth}%` : `${gift.growth}%`}
+                        </Growth>
+                    </GiftRow>
+                );
+            })}
         </Container>
     );
 };
 
-export default SeasonsPage;
+export default GiftsStatsPage;
