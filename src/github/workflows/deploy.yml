@@ -3,7 +3,8 @@ name: Deploy React App to GitHub Pages
 on:
   push:
     branches:
-      - main   # измените, если ваша основная ветка имеет другое имя
+      - main   # Основная ветка
+  workflow_dispatch:   # Возможность запускать вручную
 
 jobs:
   build-and-deploy:
@@ -11,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -23,13 +24,13 @@ jobs:
 
       - name: Build app
         env:
-          CI: false   # отключаем превращение warnings в ошибки
+          CI: false   # Отключаем превращение warnings в ошибки
         run: npm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          personal_token: ${{ secrets.GH_PAT }}   # ← использует твой PAT
+          github_token: ${{ secrets.GH_PAT }}   # <- сюда вставьте свой Personal Access Token
           publish_dir: ./build
           user_name: "github-actions[bot]"
           user_email: "github-actions[bot]@users.noreply.github.com"
