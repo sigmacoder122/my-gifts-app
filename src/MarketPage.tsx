@@ -1,403 +1,486 @@
-// src/MarketPage.tsx
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
-import { ArrowUp, ArrowDown, Gift as GiftIcon } from "lucide-react";
+import {
+    ArrowUp,
+    ArrowDown,
+    Gift as GiftIcon,
+    ChevronDown,
+    Check,
+    X,
+} from "lucide-react";
 import {
     ResponsiveContainer,
     LineChart,
     Line,
+    CartesianGrid,
     XAxis,
     YAxis,
-    CartesianGrid,
     Tooltip as RechartsTooltip,
 } from "recharts";
+import { gifts } from "./data/gifts";
+import { tonLogo } from "./data/gifts";
 
-/* ===== Данные подарков ===== */
-export interface Gift {
-    id: number;
-    name: string;
-    price: number;
-    growth: number;
-    img: string;
-}
-
-export const giftsData: Gift[] = [
-    { id: 1, name: "Push pepe", price: 3450, growth: 5, img: "https://cdn.changes.tg/gifts/models/Plush%20Pepe/png/Original.png" },
-    { id: 2, name: "Durov cap", price: 2322, growth: 10, img: "https://cdn.changes.tg/gifts/models/Durov%27s%20Cap/png/Original.png" },
-    { id: 3, name: "Signet ring", price: 20, growth: 8, img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/signetring/Rose%20Gold.webp" },
-    { id: 4, name: "Snoop sigare", price: 25, growth: 12, img: "https://storage.beee.pro/game_items/39238/NTtmBjZ3yUxIToDTrHFLseN2YaJKWWgXPj32B1V6.webp" },
-    { id: 5, name: "Genie lamp", price: 30, growth: 7, img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/genielamp/Lightning.webp" },
-    { id: 6, name: "Scared cat", price: 18, growth: 15, img: "https://podarki-tg.com/wp-content/uploads/2025/06/image-863.png" },
-];
-
-/* ===== Анимации ===== */
-const glowAnim = keyframes`
-  0% { box-shadow: 0 0 5px #00aaff; }
-  50% { box-shadow: 0 0 20px #00aaff; }
-  100% { box-shadow: 0 0 5px #00aaff; }
+/* === АНИМАЦИИ === */
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 `;
 
-const cardHoverAnim = keyframes`
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-2px); }
-  100% { transform: translateY(0px); }
+const hoverGlow = keyframes`
+  0% { box-shadow: 0 0 0 rgba(0,170,255,0.05); }
+  50% { box-shadow: 0 0 25px rgba(0,170,255,0.08); }
+  100% { box-shadow: 0 0 0 rgba(0,170,255,0.05); }
 `;
 
-const modalShow = keyframes`
-  0% { opacity: 0; transform: scale(0.95);}
-  100% { opacity: 1; transform: scale(1);}
-`;
-
-/* ===== Стили ===== */
+/* === КОНТЕЙНЕР СТРАНИЦЫ === */
 const Page = styled.div`
-  background: #0f0f10;
+  background: #0e0f11;
+  color: #fff;
   min-height: 100vh;
   padding: 16px;
-  color: #fff;
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  font-family: "Inter", sans-serif;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
 `;
 
-const TitleRow = styled.div`
+/* === ЗАГОЛОВОК === */
+const Header = styled.div`
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
 `;
 
-const PageTitle = styled.h1`
-  font-size: 24px;
-  margin: 0;
+const Title = styled.h1`
+  font-size: 20px;
   font-weight: 700;
 `;
 
-const BalanceBubble = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: linear-gradient(90deg, #083248, #0a3048);
-  border: 2px solid rgba(0, 170, 255, 0.12);
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-weight: 700;
-  color: #dff6ff;
-  box-shadow: 0 6px 20px rgba(0, 170, 255, 0.06);
-`;
-
-const SortRow = styled.div`
+const Balance = styled.div`
   display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
   align-items: center;
-`;
-
-const SortButton = styled.button<{ active?: boolean }>`
-  background: ${(p) => (p.active ? "#00aaff" : "rgba(255,255,255,0.05)")};
-  color: ${(p) => (p.active ? "#041016" : "#fff")};
-  border: none;
+  gap: 8px;
+  background: rgba(0, 170, 255, 0.08);
+  padding: 6px 10px;
   border-radius: 12px;
-  padding: 6px 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.25s;
-  &:hover {
-    background: #00c2ff;
-    color: #041016;
+  font-size: 14px;
+  font-weight: 600;
+  img {
+    width: 18px;
+    height: 18px;
   }
 `;
 
-const SortTypeWrapper = styled.div`
+/* === ФИЛЬТРЫ === */
+const FilterRow = styled.div`
   display: flex;
   gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  position: relative;
+  z-index: 10;
 `;
 
-const SortRadioLabel = styled.label<{ active?: boolean }>`
-  background: ${(p) => (p.active ? "#00aaff" : "rgba(255,255,255,0.05)")};
-  padding: 6px 10px;
-  border-radius: 10px;
-  font-weight: 700;
+const FilterButton = styled.button<{ active?: boolean }>`
+  background: ${({ active }) => (active ? "#00c2ff" : "#1c1c1e")};
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-weight: 600;
   cursor: pointer;
-  color: ${(p) => (p.active ? "#041016" : "#fff")};
-  transition: all 0.2s;
+  white-space: nowrap;
+  transition: 0.25s;
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+const DropdownWrapper = styled.div`
+  position: relative;
+  flex-shrink: 0;
+  z-index: 50;
+`;
+
+const DropdownButton = styled(FilterButton)`
   display: flex;
   align-items: center;
   gap: 4px;
+`;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: 40px;
+  left: 0;
+  background: #16171a;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  z-index: 1000;
+  animation: ${fadeIn} 0.2s ease;
+`;
+
+const DropdownItem = styled.button`
+  background: none;
+  border: none;
+  color: #fff;
+  text-align: left;
+  padding: 10px 14px;
+  width: 100%;
+  font-weight: 500;
+  cursor: pointer;
   &:hover {
-    background: #00c2ff;
-    color: #041016;
+    background: rgba(0, 170, 255, 0.1);
   }
 `;
 
+/* === КАРТОЧКИ === */
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
-  margin-top: 8px;
+  width: 100%;
 
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(3, 1fr);
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
   }
 `;
 
 const Card = styled.div`
-  background: #121214;
+  background: #141416;
   border-radius: 16px;
-  padding: 12px;
-  border: 1px solid rgba(255,255,255,0.05);
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 8px;
   align-items: center;
-  transition: all 0.25s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
   &:hover {
-    animation: ${cardHoverAnim} 0.5s ease infinite;
-    box-shadow: 0 10px 25px rgba(0, 170, 255, 0.08);
+    animation: ${hoverGlow} 1.8s infinite;
   }
 `;
 
-const ImgWrap = styled.div`
+const GiftImage = styled.img`
   width: 100%;
-  aspect-ratio: 1/1;
+  height: auto;
   border-radius: 12px;
-  border: 2px solid rgba(0,170,255,0.25);
-  background: radial-gradient(circle at 50% 50%, rgba(0,170,255,0.1), rgba(255,255,255,0.02));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  animation: ${glowAnim} 3.2s infinite;
+  margin-bottom: 6px;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 170, 255, 0.06),
+    rgba(255, 255, 255, 0.02)
+  );
 `;
 
-const Img = styled.img`
-  width: 80%;
-  height: 80%;
-  object-fit: contain;
-`;
-
-const Name = styled.div`
-  font-size: 14px;
-  font-weight: 700;
+const GiftName = styled.div`
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
   text-align: center;
 `;
 
 const InfoRow = styled.div`
   display: flex;
-  align-items: center;
   justify-content: space-between;
   width: 100%;
 `;
 
-const PriceBadge = styled.div`
-  background: linear-gradient(90deg, #00aaff, #00c8ff);
-  color: #041016;
-  font-weight: 800;
-  padding: 6px 10px;
-  border-radius: 12px;
-  font-size: 13px;
-  box-shadow: 0 4px 12px rgba(0,170,255,0.3);
-`;
-
-const GrowthBadge = styled.div<{ positive?: boolean }>`
-  background: ${(p) => (p.positive ? "rgba(0,255,130,0.1)" : "rgba(255,80,80,0.1)")};
-  color: ${(p) => (p.positive ? "#2ef06a" : "#ff6b6b")};
-  border: 1px solid ${(p) => (p.positive ? "rgba(0,255,130,0.3)" : "rgba(255,80,80,0.3)")};
-  padding: 6px 8px;
-  border-radius: 10px;
-  font-weight: 700;
+const Price = styled.div`
+  font-weight: 500;
+  font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 `;
 
-const ModalOverlay = styled.div`
+const Growth = styled.div<{ positive?: boolean }>`
+  color: ${({ positive }) => (positive ? "#00ff99" : "#ff5555")};
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+`;
+
+/* === МОДАЛКА === */
+const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.72);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 80;
-  padding: 12px;
+  z-index: 100;
+  backdrop-filter: blur(5px);
+  overflow-y: auto;
+  padding: 20px;
 `;
 
-const ModalBox = styled.div`
+const Modal = styled.div`
+  background: #111;
+  border-radius: 20px;
   width: 100%;
-  max-width: 480px;
-  background: #101214;
-  border-radius: 12px;
-  padding: 16px;
-  border: 1px solid rgba(255,255,255,0.03);
-  box-shadow: 0 24px 48px rgba(0,0,0,0.6);
+  max-width: 420px;
+  padding: 20px;
+  animation: ${fadeIn} 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  animation: ${modalShow} 0.3s ease forwards;
+  align-items: center;
+  max-height: 85vh;
+  overflow-y: auto;
 `;
 
-const InputRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const Input = styled.input`
-  flex: 1;
-  padding: 12px;
+const ModalImage = styled.img`
+  width: 80%;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: #121214;
+  margin: 12px 0;
+`;
+
+const ModalInput = styled.input`
+  width: 100%;
+  background: #1a1a1c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
   color: #fff;
+  margin: 14px 0;
   font-size: 16px;
   outline: none;
-  &::placeholder { color: rgba(255,255,255,0.4); }
-`;
-
-const Result = styled.div`
-  font-size: 16px;
-  font-weight: 700;
-  color: #00c2ff;
-`;
-
-const ButtonRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-`;
-
-const ModalButton = styled.button<{ confirm?: boolean }>`
-  flex: 1;
-  padding: 10px 0;
-  border-radius: 12px;
-  border: none;
-  font-weight: 700;
-  cursor: pointer;
-  background: ${(p) => (p.confirm ? "#00c2ff" : "rgba(255,255,255,0.05)")};
-  color: ${(p) => (p.confirm ? "#041016" : "#fff")};
-  transition: all 0.2s;
-  &:hover {
-    background: ${(p) => (p.confirm ? "#00aaff" : "rgba(255,255,255,0.1)")};
+  text-align: center;
+  &:focus {
+    border-color: #00c2ff;
   }
 `;
 
-/* ===== Mock графика ===== */
-const sampleChart = (price:number) => [
-    { day: "Пн", value: +(price*0.95).toFixed(2)},
-    { day: "Вт", value: +(price*1.02).toFixed(2)},
-    { day: "Ср", value: +(price*1.08).toFixed(2)},
-    { day: "Чт", value: +(price*1.12).toFixed(2)},
-    { day: "Пт", value: +(price*1.15).toFixed(2)},
-    { day: "Сб", value: +(price*1.18).toFixed(2)},
-    { day: "Вс", value: +(price*1.2).toFixed(2)},
-];
+const ResultText = styled.div`
+  font-size: 15px;
+  margin-bottom: 12px;
+  color: #a0a0a0;
+  text-align: center;
+`;
 
-/* ===== Компонент ===== */
-const MarketPage: React.FC = () => {
-    const [selected, setSelected] = useState<Gift | null>(null);
-    const [investment,setInvestment] = useState<number>(0);
-    const [sortType,setSortType] = useState<"price"|"growth">("price");
-    const [sortOrder,setSortOrder] = useState<"asc"|"desc">("asc");
+const ModalButtons = styled.div`
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+`;
+
+const ModalButton = styled.button<{ primary?: boolean }>`
+  flex: 1;
+  background: ${({ primary }) => (primary ? "#00c2ff" : "#1c1c1e")};
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s;
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+const ChartWrap = styled.div`
+  width: 100%;
+  height: 140px;
+  margin-bottom: 10px;
+`;
+
+/* === ФУНКЦИЯ ДАННЫХ ГРАФИКА === */
+const getChart = (price: number) => {
+    return [
+        { day: "Пн", value: price * 0.95 },
+        { day: "Вт", value: price * 0.98 },
+        { day: "Ср", value: price * 1.02 },
+        { day: "Чт", value: price * 1.05 },
+        { day: "Пт", value: price * 1.07 },
+        { day: "Сб", value: price * 1.12 },
+        { day: "Вс", value: price * 1.15 },
+    ];
+};
+
+/* === MARKET PAGE === */
+export default function MarketPage() {
+    const [sortField, setSortField] = useState<"price" | "growth">("price");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [selectedGift, setSelectedGift] = useState<any>(null);
+    const [investment, setInvestment] = useState<number | "">("");
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(()=>{
-        document.body.style.overflow = selected ? "hidden" : "auto";
-    },[selected]);
-
-    const sortedGifts = useMemo(()=>{
-        const arr=[...giftsData];
-        if(sortType==="price") return arr.sort((a,b)=>sortOrder==="asc"?a.price-b.price:b.price-a.price);
-        if(sortType==="growth") return arr.sort((a,b)=>sortOrder==="asc"?a.growth-b.growth:b.growth-a.growth);
+    const sortedGifts = useMemo(() => {
+        const arr = [...gifts];
+        arr.sort((a, b) => {
+            const valA = sortField === "price" ? a.price : a.growth;
+            const valB = sortField === "price" ? b.price : b.growth;
+            return sortOrder === "asc" ? valA - valB : valB - valA;
+        });
         return arr;
-    },[sortType, sortOrder]);
+    }, [sortField, sortOrder]);
 
-    const calculatedGrowth = selected ? +(investment*selected.growth/100).toFixed(2):0;
+    const calcGrowth =
+        selectedGift && investment
+            ? ((selectedGift.growth / 100) * Number(investment)).toFixed(2)
+            : 0;
 
-    const handleConfirm = () => {
-        alert(`Вы инвестировали ${investment} TON в ${selected?.name}, прирост: ${calculatedGrowth} TON`);
-        setSelected(null);
-        setInvestment(0);
+    const confirm = () => {
+        if (!investment || Number(investment) <= 0) return;
+        alert(
+            `✅ Инвестировано ${investment} TON в ${selectedGift.name}. Прирост: ${calcGrowth} TON`
+        );
+        setSelectedGift(null);
+        setInvestment("");
+    };
+
+    useEffect(() => {
+        if (selectedGift && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [selectedGift]);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest("[data-dropdown]")) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("click", handleClickOutside);
+        return () => document.removeEventListener("click", handleClickOutside);
+    }, []);
+
+    const toggleOrder = () => {
+        setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     };
 
     return (
         <Page>
-            <TitleRow>
-                <PageTitle>Все подарки</PageTitle>
-                <BalanceBubble><GiftIcon size={16}/><div>0 TON</div></BalanceBubble>
-            </TitleRow>
+            <Header>
+                <Title>Магазин подарков</Title>
+                <Balance>
+                    <img src={tonLogo} alt="TON" />
+                    0 TON
+                </Balance>
+            </Header>
 
-            <SortRow>
-                <SortButton active={sortType==="price"} onClick={()=>setSortType("price")}>Сортировать по цене</SortButton>
-                <SortButton active={sortType==="growth"} onClick={()=>setSortType("growth")}>Сортировать по росту</SortButton>
-                <SortTypeWrapper>
-                    <SortRadioLabel active={sortOrder==="asc"}>
-                        <input type="radio" name="order" value="asc" style={{display:"none"}} onChange={()=>setSortOrder("asc")} checked={sortOrder==="asc"} />
-                        По возрастанию
-                    </SortRadioLabel>
-                    <SortRadioLabel active={sortOrder==="desc"}>
-                        <input type="radio" name="order" value="desc" style={{display:"none"}} onChange={()=>setSortOrder("desc")} checked={sortOrder==="desc"} />
-                        По убыванию
-                    </SortRadioLabel>
-                </SortTypeWrapper>
-            </SortRow>
+            <FilterRow>
+                <FilterButton
+                    active={sortField === "price"}
+                    onClick={() => setSortField("price")}
+                >
+                    По цене
+                </FilterButton>
+                <FilterButton
+                    active={sortField === "growth"}
+                    onClick={() => setSortField("growth")}
+                >
+                    По росту
+                </FilterButton>
+
+                <DropdownWrapper data-dropdown>
+                    <DropdownButton onClick={() => setDropdownOpen(!dropdownOpen)}>
+                        {sortOrder === "asc" ? "По возрастанию" : "По убыванию"}
+                        <ChevronDown size={16} />
+                    </DropdownButton>
+                    {dropdownOpen && (
+                        <DropdownMenu>
+                            <DropdownItem onClick={toggleOrder}>
+                                {sortOrder === "asc" ? "Сделать по убыванию" : "Сделать по возрастанию"}
+                            </DropdownItem>
+                        </DropdownMenu>
+                    )}
+                </DropdownWrapper>
+            </FilterRow>
 
             <Grid>
-                {sortedGifts.map(g=>(
-                    <Card key={g.id} onClick={()=>{setSelected(g); setInvestment(0)}}>
-                        <ImgWrap><Img src={g.img} /></ImgWrap>
-                        <Name>{g.name}</Name>
+                {sortedGifts.map((gift) => (
+                    <Card key={gift.id} onClick={() => setSelectedGift(gift)}>
+                        <GiftImage src={gift.img} alt={gift.name} />
+                        <GiftName>{gift.name}</GiftName>
                         <InfoRow>
-                            <PriceBadge>{g.price} TON</PriceBadge>
-                            <GrowthBadge positive={g.growth>=0}>
-                                {g.growth>=0?<ArrowUp size={12}/>:<ArrowDown size={12}/>} {Math.abs(g.growth)}%
-                            </GrowthBadge>
+                            <Price>
+                                <GiftIcon size={14} /> {gift.price}
+                            </Price>
+                            <Growth positive={gift.growth >= 0}>
+                                {gift.growth >= 0 ? (
+                                    <ArrowUp size={12} />
+                                ) : (
+                                    <ArrowDown size={12} />
+                                )}
+                                {gift.growth}%
+                            </Growth>
                         </InfoRow>
                     </Card>
                 ))}
             </Grid>
 
-            {selected && (
-                <ModalOverlay onClick={()=>setSelected(null)}>
-                    <ModalBox onClick={e=>e.stopPropagation()}>
-                        <h3 style={{margin:0}}>{selected.name}</h3>
-                        <ImgWrap style={{width:"60%", margin:"12px auto"}}><Img src={selected.img}/></ImgWrap>
-                        <div style={{height:200}}>
+            {selectedGift && (
+                <Overlay onClick={() => setSelectedGift(null)}>
+                    <Modal onClick={(e) => e.stopPropagation()}>
+                        <h2 style={{ textAlign: "center", margin: 0 }}>{selectedGift.name}</h2>
+                        <ModalImage src={selectedGift.img} alt={selectedGift.name} />
+
+                        <ChartWrap>
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={sampleChart(selected.price)}>
-                                    <CartesianGrid stroke="rgba(255,255,255,0.03)"/>
-                                    <XAxis dataKey="day" stroke="#7ed6ff"/>
-                                    <YAxis stroke="#7ed6ff"/>
-                                    <RechartsTooltip contentStyle={{background:"#0f1720"}}/>
-                                    <Line type="monotone" dataKey="value" stroke="#00c2ff" strokeWidth={3} dot={{r:4, fill:"#00c2ff"}}/>
+                                <LineChart data={getChart(selectedGift.price)}>
+                                    <CartesianGrid stroke="rgba(255,255,255,0.05)" />
+                                    <XAxis dataKey="day" stroke="#888" />
+                                    <YAxis stroke="#888" />
+                                    <RechartsTooltip
+                                        contentStyle={{
+                                            background: "#0f0f0f",
+                                            borderRadius: "8px",
+                                            border: "1px solid rgba(255,255,255,0.1)",
+                                        }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="value"
+                                        stroke="#00c2ff"
+                                        strokeWidth={3}
+                                        dot={false}
+                                    />
                                 </LineChart>
                             </ResponsiveContainer>
-                        </div>
+                        </ChartWrap>
 
-                        <InputRow>
-                            <Input
-                                ref={inputRef}
-                                type="number"
-                                min={0}
-                                placeholder="Введите сумму инвестиций (TON)"
-                                value={investment}
-                                onChange={e=>{
-                                    const val = e.target.value.replace(/^0+/, '');
-                                    setInvestment(Number(val));
-                                }}
-                            />
-                            <Result>Прирост: {calculatedGrowth} TON ({selected.growth}%)</Result>
-                        </InputRow>
+                        <ModalInput
+                            ref={inputRef}
+                            type="number"
+                            inputMode="decimal"
+                            placeholder="Введите сумму TON"
+                            value={investment}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setInvestment(val === "" ? "" : Number(val));
+                            }}
+                        />
 
-                        <ButtonRow>
-                            <ModalButton onClick={()=>setSelected(null)}>Отмена</ModalButton>
-                            <ModalButton confirm onClick={handleConfirm}>Подтвердить</ModalButton>
-                        </ButtonRow>
-                    </ModalBox>
-                </ModalOverlay>
+                        <ResultText>
+                            Прирост: <b>{calcGrowth}</b> TON ({selectedGift.growth}%)
+                        </ResultText>
+
+                        <ModalButtons>
+                            <ModalButton onClick={() => setSelectedGift(null)}>
+                                <X size={16} /> Отмена
+                            </ModalButton>
+                            <ModalButton primary onClick={confirm}>
+                                <Check size={16} /> Подтвердить
+                            </ModalButton>
+                        </ModalButtons>
+                    </Modal>
+                </Overlay>
             )}
         </Page>
     );
-};
-
-export default MarketPage;
+}

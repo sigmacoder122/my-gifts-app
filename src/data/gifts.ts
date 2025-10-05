@@ -1,66 +1,62 @@
+// src/data/gifts.ts
 export interface Gift {
     id: number;
     name: string;
-    price: number; // в TON
-    growth: number; // рост за неделю в %
-    img: string; // ссылка на изображение
-    invested: number; // добавили поле "инвестировано"
+    price: number;
+    growth: number;
+    img: string;
+    invested?: number; // 💰 Добавлено: сумма инвестиций
 }
 
-// Массив подарков
 export const gifts: Gift[] = [
     {
         id: 1,
-        name: "Push pepe",
+        name: "Push Pepe",
         price: 3450,
         growth: 5,
-        invested: 200, // пример инвестиции
-        img: "https://cdn.changes.tg/gifts/models/Plush%20Pepe/png/Original.png"
+        img: "https://cdn.changes.tg/gifts/models/Plush%20Pepe/png/Original.png",
+        invested: 0,
     },
     {
         id: 2,
-        name: "Durov cap",
+        name: "Durov Cap",
         price: 2322,
         growth: 10,
-        invested: 150,
-        img: "https://cdn.changes.tg/gifts/models/Durov%27s%20Cap/png/Original.png"
+        img: "https://cdn.changes.tg/gifts/models/Durov%27s%20Cap/png/Original.png",
+        invested: 0,
     },
     {
         id: 3,
-        name: "Signet ring",
+        name: "Signet Ring",
         price: 20,
         growth: 8,
-        invested: 50,
-        img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/signetring/Rose%20Gold.webp"
+        img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/signetring/Rose%20Gold.webp",
+        invested: 0,
     },
     {
         id: 4,
-        name: "Snoop sigare",
+        name: "Snoop Sigare",
         price: 25,
         growth: 12,
-        invested: 70,
-        img: "https://storage.beee.pro/game_items/39238/NTtmBjZ3yUxIToDTrHFLseN2YaJKWWgXPj32B1V6.webp"
+        img: "https://storage.beee.pro/game_items/39238/NTtmBjZ3yUxIToDTrHFLseN2YaJKWWgXPj32B1V6.webp",
+        invested: 0,
     },
     {
         id: 5,
-        name: "Genie lamp",
+        name: "Genie Lamp",
         price: 30,
         growth: 7,
-        invested: 40,
-        img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/genielamp/Lightning.webp"
+        img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/genielamp/Lightning.webp",
+        invested: 0,
     },
     {
         id: 6,
-        name: "Scared cat",
+        name: "Scared Cat",
         price: 18,
         growth: 15,
-        invested: 60,
-        img: "https://podarki-tg.com/wp-content/uploads/2025/06/image-863.png"
+        img: "https://podarki-tg.com/wp-content/uploads/2025/06/image-863.png",
+        invested: 0,
     },
 ];
 
-// Лого TON
 export const tonLogo = "https://ton.org/download/ton_symbol.png";
-
-// Пустой экспорт для корректного модуля
-export {};

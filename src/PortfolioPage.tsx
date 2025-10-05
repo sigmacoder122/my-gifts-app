@@ -1,261 +1,330 @@
-// src/PortfolioPage.tsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
 import {
     LineChart,
     Line,
     XAxis,
     YAxis,
-    CartesianGrid,
-    Tooltip as RechartsTooltip,
+    Tooltip,
     ResponsiveContainer,
+    CartesianGrid,
 } from "recharts";
 import { ArrowUp, ArrowDown } from "lucide-react";
-import { gifts, tonLogo, Gift } from "./data/gifts";
+import { gifts, tonLogo } from "./data/gifts";
 
-/* ===== Анимации ===== */
-const glowAnim = keyframes`
-  0% { box-shadow: 0 0 5px #00aaff; }
-  50% { box-shadow: 0 0 20px #00aaff; }
-  100% { box-shadow: 0 0 5px #00aaff; }
+/* ====== Интерфейсы ====== */
+export interface Gift {
+    id: number;
+    name: string;
+    price: number;
+    growth: number;
+    img: string;
+    invested?: number;
+}
+
+interface TelegramUser {
+    first_name?: string;
+    last_name?: string;
+    username?: string;
+    photo_url?: string;
+}
+
+/* ====== Анимации ====== */
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 `;
 
-const growNumber = keyframes`
-  0% { transform: scale(0.8); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-`;
-
-/* ===== Стили ===== */
-const Container = styled.div`
-  background: #121212;
-  min-height: 100vh;
-  padding: 20px;
-  color: #fff;
-  font-family: Arial, sans-serif;
+/* ====== Стили ====== */
+const PageContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(180deg, #0e0f12 0%, #1b1c20 100%);
+    min-height: 100vh;
+    color: white;
+    padding: 20px;
+    overflow-y: auto;
 `;
 
 const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 10px;
 `;
 
-const BalanceWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #1e1e1e;
-  padding: 8px 15px;
-  border-radius: 50px;
-  border: 2px solid #00aaff;
-  font-weight: bold;
+const Avatar = styled.img`
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #4ea3ff;
 `;
 
-const TonIcon = styled.img`
-  width: 24px;
-  height: 24px;
-  animation: ${glowAnim} 1.5s infinite;
+const Username = styled.h2`
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: white;
 `;
 
-const AnimatedNumber = styled.span`
-  display: inline-block;
-  animation: ${growNumber} 0.5s;
+const StatsContainer = styled.div`
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 15px;
+    margin: 15px 0;
 `;
 
-const SectionTitle = styled.div`
-  font-weight: bold;
-  font-size: 18px;
-  margin-bottom: 15px;
+const StatBlock = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 `;
 
-const GraphWrapper = styled.div`
-  background: #1e1e1e;
-  border-radius: 20px;
-  padding: 15px;
-  margin-bottom: 25px;
+const StatLabel = styled.div`
+    font-size: 0.9rem;
+    color: #b4b4b4;
 `;
 
-interface TableColumnProps {
-    flex?: number;
-}
+const StatValue = styled.div`
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: 5px;
+`;
+
+const ChartContainer = styled.div`
+    width: 100%;
+    height: 240px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 10px;
+    animation: ${fadeIn} 0.6s ease;
+`;
+
+const TableContainer = styled.div`
+    width: 100%;
+    margin-top: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    overflow: hidden;
+`;
 
 const TableHeader = styled.div`
-  display: flex;
-  gap: 15px;
-  font-weight: bold;
-  padding: 10px 0;
-  border-bottom: 2px solid #333;
-  cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.07);
+    font-weight: bold;
 `;
 
-const TableColumn = styled.div<TableColumnProps>`
-  flex: ${(props) => props.flex || 1};
-  display: flex;
-  align-items: center;
-`;
-
-interface GiftGrowthProps {
-    positive?: boolean;
-}
-
-const GiftCard = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 12px 0;
-  border-bottom: 1px solid #292929;
-  transition: all 0.2s;
-  &:hover {
-    background: #1a1a1a;
-  }
+const TableRow = styled.div`
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    align-items: center;
+    &:last-child {
+        border-bottom: none;
+    }
 `;
 
 const GiftImage = styled.img`
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
-  object-fit: cover;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    margin-right: 10px;
 `;
 
 const GiftName = styled.div`
-  font-size: 16px;
+    flex: 2;
 `;
 
 const GiftPrice = styled.div`
-  color: #fff;
-  font-size: 14px;
+    flex: 1;
+    text-align: right;
 `;
 
-const GiftGrowth = styled.div<GiftGrowthProps>`
-  color: ${(props) => (props.positive ? "#0f0" : "#f55")};
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 14px;
+const GiftGrowth = styled.div<{ positive: boolean }>`
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    color: ${(p) => (p.positive ? "#4EFFA1" : "#FF4E4E")};
 `;
 
-/* ===== Компонент ===== */
-interface SortConfig {
-    key: keyof Gift;
-    direction: "asc" | "desc";
-}
+const TonLogo = styled.img`
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+    margin-left: 5px;
+`;
 
-interface TooltipProps {
-    active?: boolean;
-    payload?: any[];
-}
+const SortButton = styled.button`
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    &:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+`;
 
+/* ====== Компонент ====== */
 const PortfolioPage: React.FC = () => {
-    const [balance, setBalance] = useState(1250);
-    const [animatedBalance, setAnimatedBalance] = useState(balance);
-    const [portfolio, setPortfolio] = useState<Gift[]>(
-        gifts.map((gift) => ({
-            ...gift,
-            invested: Math.floor(Math.random() * 100) + 50,
-        }))
-    );
+    const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
+    const [portfolio, setPortfolio] = useState<Gift[]>([]);
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Gift; direction: "asc" | "desc" }>({
+        key: "growth",
+        direction: "desc",
+    });
 
-    const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-
+    /* ====== Telegram данные или заглушка ====== */
     useEffect(() => {
-        let start = animatedBalance;
-        const end = balance;
-        const step = () => {
-            start += (end - start) / 5;
-            if (Math.abs(start - end) < 0.01) start = end;
-            setAnimatedBalance(parseFloat(start.toFixed(2)));
-            if (start !== end) requestAnimationFrame(step);
-        };
-        step();
-    }, [balance]);
+        try {
+            const tg = (window as any).Telegram?.WebApp;
+            if (tg && tg.initDataUnsafe?.user) {
+                setTelegramUser(tg.initDataUnsafe.user);
+            } else {
+                setTelegramUser({
+                    first_name: "Иван",
+                    username: "ivan_dev",
+                    photo_url:
+                        "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png",
+                });
+            }
+        } catch {
+            setTelegramUser({
+                first_name: "Иван",
+                username: "ivan_dev",
+                photo_url:
+                    "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png",
+            });
+        }
 
+        // Пример инвестированных подарков
+        const demoPortfolio = gifts.map((g) => ({
+            ...g,
+            invested: Math.floor(Math.random() * 5000) + 1000,
+        }));
+        setPortfolio(demoPortfolio);
+    }, []);
+
+    /* ====== Сортировка ====== */
     const requestSort = (key: keyof Gift) => {
         let direction: "asc" | "desc" = "asc";
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+        if (sortConfig.key === key && sortConfig.direction === "asc") {
             direction = "desc";
         }
         setSortConfig({ key, direction });
+
         const sorted = [...portfolio].sort((a, b) => {
-            if (a[key] < b[key]) return direction === "asc" ? -1 : 1;
-            if (a[key] > b[key]) return direction === "asc" ? 1 : -1;
+            const aVal = a[key] ?? 0;
+            const bVal = b[key] ?? 0;
+            if (aVal < bVal) return direction === "asc" ? -1 : 1;
+            if (aVal > bVal) return direction === "asc" ? 1 : -1;
             return 0;
         });
+
         setPortfolio(sorted);
     };
 
+    /* ====== Данные для графика ====== */
+    const totalInvested = portfolio.reduce((acc, g) => acc + (g.invested ?? 0), 0);
+
     const chartData = [
-        { day: "Пн", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 0.95 },
-        { day: "Вт", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.05 },
-        { day: "Ср", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.1 },
-        { day: "Чт", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.15 },
-        { day: "Пт", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.2 },
-        { day: "Сб", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.18 },
-        { day: "Вс", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.22 },
+        { day: "Пн", value: totalInvested * 0.95 },
+        { day: "Вт", value: totalInvested * 1.05 },
+        { day: "Ср", value: totalInvested * 1.1 },
+        { day: "Чт", value: totalInvested * 1.15 },
+        { day: "Пт", value: totalInvested * 1.2 },
+        { day: "Сб", value: totalInvested * 1.25 },
+        { day: "Вс", value: totalInvested * 1.3 },
     ];
 
-    const CustomTooltip: React.FC<TooltipProps> = ({ active, payload }) => {
-        if (active && payload && payload.length) {
-            return (
-                <div style={{ background: "#292929", padding: 10, borderRadius: 10 }}>
-                    <p>{payload[0].payload.day}</p>
-                    <p>{payload[0].value.toFixed(2)} TON</p>
-                </div>
-            );
-        }
-        return null;
-    };
-
     return (
-        <Container>
+        <PageContainer>
             <Header>
-                <BalanceWrapper>
-                    <TonIcon src={tonLogo} alt="TON" />
-                    <AnimatedNumber>{animatedBalance}</AnimatedNumber>
-                </BalanceWrapper>
+                <Avatar src={telegramUser?.photo_url} alt="avatar" />
+                <Username>@{telegramUser?.username}</Username>
             </Header>
 
-            <SectionTitle>График инвестиций</SectionTitle>
-            <GraphWrapper>
-                <ResponsiveContainer width="100%" height={250}>
+            <StatsContainer>
+                <StatBlock>
+                    <StatLabel>Всего инвестировано</StatLabel>
+                    <StatValue>
+                        {totalInvested.toLocaleString()} TON
+                        <TonLogo src={tonLogo} alt="TON" />
+                    </StatValue>
+                </StatBlock>
+                <StatBlock>
+                    <StatLabel>Рост портфеля</StatLabel>
+                    <StatValue style={{ color: "#4EFFA1" }}>+{(Math.random() * 20).toFixed(2)}%</StatValue>
+                </StatBlock>
+                <StatBlock>
+                    <StatLabel>Подарков</StatLabel>
+                    <StatValue>{portfolio.length}</StatValue>
+                </StatBlock>
+            </StatsContainer>
+
+            <ChartContainer>
+                <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
-                        <CartesianGrid stroke="#333" strokeDasharray="3 3" />
-                        <XAxis dataKey="day" stroke="#00aaff" />
-                        <YAxis stroke="#00aaff" />
-                        <RechartsTooltip content={<CustomTooltip />} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                        <XAxis dataKey="day" stroke="#888" />
+                        <YAxis stroke="#888" />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: "#1b1c20", border: "none", color: "#fff" }}
+                            labelStyle={{ color: "#aaa" }}
+                        />
                         <Line
                             type="monotone"
                             dataKey="value"
-                            stroke="#00aaff"
+                            stroke="#4ea3ff"
                             strokeWidth={3}
-                            dot={{ r: 5, fill: "#00aaff" }}
+                            dot={false}
                         />
                     </LineChart>
                 </ResponsiveContainer>
-            </GraphWrapper>
+            </ChartContainer>
 
-            <SectionTitle>Инвестированные подарки</SectionTitle>
-            <TableHeader>
-                <TableColumn flex={2} onClick={() => requestSort("name")}>Название</TableColumn>
-                <TableColumn flex={1} onClick={() => requestSort("invested")}>Сумма</TableColumn>
-                <TableColumn flex={1} onClick={() => requestSort("growth")}>Рост</TableColumn>
-            </TableHeader>
+            <div style={{ marginTop: "15px", display: "flex", justifyContent: "center" }}>
+                <SortButton onClick={() => requestSort("name")}>Сортировать по названию</SortButton>
+                <SortButton onClick={() => requestSort("growth")}>По росту</SortButton>
+                <SortButton onClick={() => requestSort("invested")}>По инвестициям</SortButton>
+            </div>
 
-            {portfolio.map((gift) => (
-                <GiftCard key={gift.id}>
-                    <GiftImage src={gift.img} alt={gift.name} />
-                    <TableColumn flex={2}><GiftName>{gift.name}</GiftName></TableColumn>
-                    <TableColumn flex={1}><GiftPrice>{gift.invested} TON</GiftPrice></TableColumn>
-                    <TableColumn flex={1}>
+            <TableContainer>
+                <TableHeader>
+                    <div style={{ flex: 2 }}>Название</div>
+                    <div style={{ flex: 1, textAlign: "right" }}>Инвестиции</div>
+                    <div style={{ flex: 1, textAlign: "right" }}>Рост</div>
+                </TableHeader>
+
+                {portfolio.map((gift) => (
+                    <TableRow key={gift.id}>
+                        <div style={{ display: "flex", alignItems: "center", flex: 2 }}>
+                            <GiftImage src={gift.img} alt={gift.name} />
+                            <GiftName>{gift.name}</GiftName>
+                        </div>
+                        <GiftPrice>{gift.invested ?? 0} TON</GiftPrice>
                         <GiftGrowth positive={gift.growth >= 0}>
                             {gift.growth >= 0 ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-                            {Math.abs(gift.growth)}%
+                            &nbsp;{gift.growth}%
                         </GiftGrowth>
-                    </TableColumn>
-                </GiftCard>
-            ))}
-        </Container>
+                    </TableRow>
+                ))}
+            </TableContainer>
+        </PageContainer>
     );
 };
 
