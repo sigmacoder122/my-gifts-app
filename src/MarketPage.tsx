@@ -1,346 +1,310 @@
-import React, { useState, useEffect } from "react";
+// src/MarketPage.tsx
+import React, { useMemo, useState } from "react";
 import styled, { keyframes } from "styled-components";
+import { ArrowUp, ArrowDown, ShoppingBag, User, Gift as GiftIcon, Grid as GridIcon } from "lucide-react";
 import {
+    ResponsiveContainer,
     LineChart,
     Line,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip as RechartsTooltip,
-    ResponsiveContainer,
 } from "recharts";
-import { ArrowUp, ArrowDown } from "lucide-react";
-import { gifts } from "./data/gifts";
+import { gifts as giftsData, Gift as GiftType } from "./data/gifts";
 
-// ======================= Типы =======================
-type GiftType = {
-    id: number;
-    name: string;
-    price: number;
-    growth: number;
-    img: string;
-};
-
-// ======================= Анимации =======================
-const hoverAnim = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+/* ====== АНИМАЦИИ ====== */
+const glow = keyframes`
+  0% { box-shadow: 0 0 0px rgba(0,170,255,0.0); }
+  50% { box-shadow: 0 6px 22px rgba(0,170,255,0.18); }
+  100% { box-shadow: 0 0 0px rgba(0,170,255,0.0); }
 `;
 
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-// ======================= Стили =======================
-const Container = styled.div`
-  background: #121212;
+/* ====== СТИЛИ ====== */
+const Page = styled.div`
+  background: #0f0f10;
   min-height: 100vh;
-  padding: 30px 20px 80px;
+  padding: 18px 18px 110px;
   color: #fff;
-  font-family: 'Arial', sans-serif;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 `;
 
-const SortRow = styled.div`
+const TitleRow = styled.div`
   display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 `;
 
-const SortButton = styled.button<{ active?: boolean }>`
-  background: ${({ active }) => (active ? "#00aaff" : "transparent")};
-  border: 2px solid #00aaff;
-  border-radius: 12px;
-  padding: 8px 12px;
-  cursor: pointer;
-  color: ${({ active }) => (active ? "#121212" : "#fff")};
-  font-weight: bold;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #00aaff;
-    color: #121212;
-  }
+const PageTitle = styled.h1`
+  font-size: 26px;
+  margin: 0;
+  font-weight: 700;
 `;
 
-const GiftsGrid = styled.div`
+const BalanceBubble = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, #083248, #0a3048);
+  border: 2px solid rgba(0, 170, 255, 0.12);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: #dff6ff;
+  box-shadow: 0 6px 20px rgba(0, 170, 255, 0.06);
+`;
+
+const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-
-  @media (max-width: 900px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-  }
+  gap: 18px;
+  margin-top: 8px;
 `;
 
-const GiftCardWrapper = styled.div`
-  background: #1e1e1e;
-  border-radius: 20px;
-  padding: 15px;
-  cursor: pointer;
-  animation: ${fadeIn} 0.4s ease forwards;
-  transition: all 0.3s ease;
+const Card = styled.div`
+  background: #121214;
+  border-radius: 18px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,0.05);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  transition: all 0.25s ease;
+  cursor: pointer;
 
   &:hover {
-    animation: ${hoverAnim} 0.6s ease forwards;
-    box-shadow: 0 5px 20px rgba(0, 170, 255, 0.4);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0, 170, 255, 0.08);
   }
 `;
 
-const GiftImage = styled.img`
+const ImgWrap = styled.div`
   width: 100%;
-  height: auto;
-  max-height: 300px;
-  object-fit: contain;
-  border-radius: 15px;
-  margin-bottom: 12px;
-`;
-
-const GiftInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const GiftName = styled.div`
-  font-size: 16px;
-  font-weight: bold;
-`;
-
-const GiftPrice = styled.div`
-  font-size: 14px;
-  background: #000;
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 6px;
-  width: fit-content;
-`;
-
-const GiftGrowth = styled.div<{ positive: boolean }>`
-  font-size: 14px;
-  background: #000;
-  color: ${(props) => (props.positive ? "#0f0" : "#f55")};
-  padding: 4px 8px;
-  border-radius: 6px;
-  width: fit-content;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  border: 2px solid rgba(0,170,255,0.25);
+  background: radial-gradient(circle at 50% 50%, rgba(0,170,255,0.1), rgba(255,255,255,0.02));
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  overflow: hidden;
+  animation: ${glow} 3.2s infinite;
 `;
 
-// ======================= Модалка =======================
+const Img = styled.img`
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
+`;
+
+const Name = styled.div`
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 6px;
+`;
+
+const InfoRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+`;
+
+const PriceBadge = styled.div`
+  background: linear-gradient(90deg, #00aaff, #00c8ff);
+  color: #041016;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0,170,255,0.3);
+`;
+
+const GrowthBadge = styled.div<{ positive?: boolean }>`
+  background: ${(p) => (p.positive ? "rgba(0,255,130,0.1)" : "rgba(255,80,80,0.1)")};
+  color: ${(p) => (p.positive ? "#2ef06a" : "#ff6b6b")};
+  border: 1px solid ${(p) => (p.positive ? "rgba(0,255,130,0.3)" : "rgba(255,80,80,0.3)")};
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const CartBtn = styled.button`
+  background: rgba(255,255,255,0.03);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dbeefc;
+  cursor: pointer;
+  transition: 0.2s;
+  &:hover {
+    background: rgba(255,255,255,0.07);
+    transform: translateY(-2px);
+  }
+`;
+
 const ModalOverlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.8);
+  inset: 0;
+  background: rgba(0,0,0,0.72);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 200;
+  justify-content: center;
+  z-index: 80;
 `;
 
-const ModalContent = styled.div`
-  background: #1e1e1e;
-  border-radius: 20px;
-  padding: 20px;
-  max-width: 500px;
-  width: 100%;
-  animation: ${fadeIn} 0.3s ease;
-  color: #fff;
+const ModalBox = styled.div`
+  width: 92%;
+  max-width: 680px;
+  background: #101214;
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.6);
 `;
 
-const ModalButtons = styled.div`
-  margin-top: 20px;
+const BottomNav = styled.nav`
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  margin: 0 10px;
+  background: linear-gradient(180deg, rgba(18,18,18,0.95), rgba(10,10,10,0.98));
+  border-radius: 18px;
+  padding: 10px 14px;
   display: flex;
+  align-items: center;
   justify-content: space-around;
-  gap: 15px;
+  gap: 6px;
+  z-index: 100;
+  border: 1px solid rgba(255,255,255,0.03);
 `;
 
-const InvestButton = styled.button`
-  background: #00aaff;
+const NavItem = styled.button<{ active?: boolean }>`
+  background: ${(p) => (p.active ? "#0a2b3a" : "transparent")};
   border: none;
-  border-radius: 10px;
-  padding: 12px 20px;
-  font-weight: bold;
-  color: #121212;
+  color: ${(p) => (p.active ? "#00aaff" : "#e7f6ff")};
+  padding: 8px 10px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-
+  transition: 0.2s;
   &:hover {
-    background: #0077aa;
+    color: #00aaff;
   }
 `;
 
-// ======================= Кастомный Tooltip =======================
-type TooltipProps = { active?: boolean; payload?: any };
+/* ====== Мок графика ====== */
+const sampleChart = (price: number) => [
+    { day: "Пн", value: +(price * 0.95).toFixed(2) },
+    { day: "Вт", value: +(price * 1.02).toFixed(2) },
+    { day: "Ср", value: +(price * 1.08).toFixed(2) },
+    { day: "Чт", value: +(price * 1.12).toFixed(2) },
+    { day: "Пт", value: +(price * 1.15).toFixed(2) },
+    { day: "Сб", value: +(price * 1.18).toFixed(2) },
+    { day: "Вс", value: +(price * 1.2).toFixed(2) },
+];
 
-const CustomTooltip: React.FC<TooltipProps> = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-        return (
-            <div
-                style={{
-                    background: "#1e1e1e",
-                    border: "1px solid #00aaff",
-                    padding: "10px",
-                    borderRadius: "10px",
-                    color: "#fff",
-                }}
-            >
-                <p><strong>{payload[0].payload.day}</strong></p>
-                <p>Цена: {payload[0].value.toFixed(2)} TON</p>
-            </div>
-        );
-    }
-    return null;
-};
-
-// ======================= MarketPage =======================
+/* ====== КОМПОНЕНТ ====== */
 const MarketPage: React.FC = () => {
-    const [selectedGift, setSelectedGift] = useState<GiftType | null>(null);
-    const [amount, setAmount] = useState<string>("");
-    const [percentDisplay, setPercentDisplay] = useState<string>("0");
-    const [sortType, setSortType] = useState<"priceAsc" | "priceDesc" | "growthAsc" | "growthDesc">("priceAsc");
+    const [selected, setSelected] = useState<GiftType | null>(null);
+    const [activeTab, setActiveTab] = useState<"market" | "mygifts" | "seasons" | "profile">("market");
 
-    // сортировка подарков
-    const sortedGifts = [...gifts].sort((a, b) => {
-        switch (sortType) {
-            case "priceAsc": return a.price - b.price;
-            case "priceDesc": return b.price - a.price;
-            case "growthAsc": return a.growth - b.growth;
-            case "growthDesc": return b.growth - a.growth;
-            default: return 0;
-        }
-    });
-
-    // плавное обновление процента
-    useEffect(() => {
-        if (!selectedGift) return;
-        const targetPercent = amount ? ((parseFloat(amount) / selectedGift.price) * 100).toFixed(2) : "0";
-        let start = parseFloat(percentDisplay);
-        const end = parseFloat(targetPercent);
-
-        const step = () => {
-            start += (end - start) / 5;
-            if (Math.abs(start - end) < 0.1) start = end;
-            setPercentDisplay(start.toFixed(2));
-            if (start !== end) requestAnimationFrame(step);
-        };
-        step();
-    }, [amount, selectedGift]);
-
-    // данные графика
-    const chartData = selectedGift ? [
-        { day: "Пн", value: selectedGift.price * 0.95 },
-        { day: "Вт", value: selectedGift.price * 1.05 },
-        { day: "Ср", value: selectedGift.price * 1.1 },
-        { day: "Чт", value: selectedGift.price * 1.15 },
-        { day: "Пт", value: selectedGift.price * 1.2 },
-        { day: "Сб", value: selectedGift.price * 1.18 },
-        { day: "Вс", value: selectedGift.price * 1.22 },
-    ] : [];
+    const gifts = useMemo(() => giftsData, []);
 
     return (
-        <Container>
-            <h2 style={{ marginBottom: "20px" }}>🎁 Маркет подарков</h2>
+        <Page>
+            <TitleRow>
+                <PageTitle>Все подарки</PageTitle>
+                <BalanceBubble>
+                    <GiftIcon size={16} />
+                    <div>0 TON</div>
+                </BalanceBubble>
+            </TitleRow>
 
-            {/* Сортировка */}
-            <SortRow>
-                <SortButton active={sortType === "priceAsc"} onClick={() => setSortType("priceAsc")}>Цена ↑</SortButton>
-                <SortButton active={sortType === "priceDesc"} onClick={() => setSortType("priceDesc")}>Цена ↓</SortButton>
-                <SortButton active={sortType === "growthAsc"} onClick={() => setSortType("growthAsc")}>Рост ↑</SortButton>
-                <SortButton active={sortType === "growthDesc"} onClick={() => setSortType("growthDesc")}>Рост ↓</SortButton>
-            </SortRow>
+            <Grid>
+                {gifts.map((g) => (
+                    <Card key={g.id} onClick={() => setSelected(g)}>
+                        <ImgWrap>
+                            <Img src={g.img} alt={g.name} />
+                        </ImgWrap>
+                        <Name>{g.name}</Name>
 
-            <GiftsGrid>
-                {sortedGifts.map((gift: GiftType) => (
-                    <GiftCardWrapper key={gift.id} onClick={() => setSelectedGift(gift)}>
-                        <GiftImage src={gift.img} alt={gift.name} />
-                        <GiftInfo>
-                            <GiftName>{gift.name}</GiftName>
-                            <GiftPrice>{gift.price} TON</GiftPrice>
-                            <GiftGrowth positive={gift.growth >= 0}>
-                                {gift.growth >= 0 ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-                                {Math.abs(gift.growth)}%
-                            </GiftGrowth>
-                        </GiftInfo>
-                    </GiftCardWrapper>
-                ))}
-            </GiftsGrid>
-
-            {selectedGift && (
-                <ModalOverlay onClick={() => setSelectedGift(null)}>
-                    <ModalContent onClick={(e) => e.stopPropagation()}>
-                        <h3>{selectedGift.name}</h3>
-                        <p>Цена: <strong>{selectedGift.price} TON</strong></p>
-                        <p>
-                            Рост:{" "}
-                            <strong style={{ color: selectedGift.growth >= 0 ? "#0f0" : "#f55" }}>
-                                {selectedGift.growth >= 0 ? "▲" : "▼"} {Math.abs(selectedGift.growth)}%
-                            </strong>
-                        </p>
-
-                        <ResponsiveContainer width="100%" height={200}>
-                            <LineChart data={chartData}>
-                                <CartesianGrid stroke="#333" strokeDasharray="3 3" />
-                                <XAxis dataKey="day" stroke="#00aaff" />
-                                <YAxis stroke="#00aaff" />
-                                <RechartsTooltip content={<CustomTooltip />} />
-                                <Line
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke="#00aaff"
-                                    strokeWidth={3}
-                                    dot={{ r: 5, fill: "#00aaff" }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-
-                        <div style={{ marginTop: "15px" }}>
-                            <label>Введите сумму инвестиций (TON): </label>
-                            <input
-                                type="number"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                style={{
-                                    width: "100%",
-                                    marginTop: "8px",
-                                    padding: "10px",
-                                    borderRadius: "10px",
-                                    border: "1px solid #00aaff",
-                                    background: "#121212",
-                                    color: "#fff",
-                                }}
-                            />
-                            <p style={{ marginTop: "10px" }}>
-                                Это {percentDisplay}% от цены подарка
-                            </p>
-                        </div>
-
-                        <ModalButtons>
-                            <InvestButton
-                                onClick={() => {
-                                    alert(`Инвестировано ${amount} TON в ${selectedGift.name}`);
+                        <InfoRow>
+                            <PriceBadge>{g.price} TON</PriceBadge>
+                            <GrowthBadge positive={g.growth >= 0}>
+                                {g.growth >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                                {Math.abs(g.growth)}%
+                            </GrowthBadge>
+                            <CartBtn
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    alert("Добавлено в корзину (демо)");
                                 }}
                             >
-                                Подтвердить
-                            </InvestButton>
-                            <InvestButton onClick={() => setSelectedGift(null)}>Отмена</InvestButton>
-                        </ModalButtons>
-                    </ModalContent>
+                                <ShoppingBag size={16} />
+                            </CartBtn>
+                        </InfoRow>
+                    </Card>
+                ))}
+            </Grid>
+
+            {selected && (
+                <ModalOverlay onClick={() => setSelected(null)}>
+                    <ModalBox onClick={(e) => e.stopPropagation()}>
+                        <h3 style={{ margin: 0 }}>{selected.name}</h3>
+                        <div style={{ height: 220, marginTop: 12 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={sampleChart(selected.price)}>
+                                    <CartesianGrid stroke="rgba(255,255,255,0.03)" />
+                                    <XAxis dataKey="day" stroke="#7ed6ff" />
+                                    <YAxis stroke="#7ed6ff" />
+                                    <RechartsTooltip contentStyle={{ background: "#0f1720" }} />
+                                    <Line type="monotone" dataKey="value" stroke="#00c2ff" strokeWidth={3} dot={{ r: 4, fill: "#00c2ff" }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </ModalBox>
                 </ModalOverlay>
             )}
-        </Container>
+
+            <BottomNav>
+                <NavItem active={activeTab === "market"} onClick={() => setActiveTab("market")}>
+                    <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 11h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></div>
+                    <div style={{ fontSize: 12 }}>Маркет</div>
+                </NavItem>
+
+                <NavItem active={activeTab === "mygifts"} onClick={() => setActiveTab("mygifts")}>
+                    <GiftIcon size={18} />
+                    <div style={{ fontSize: 12 }}>Мои подарки</div>
+                </NavItem>
+
+                <NavItem active={activeTab === "seasons"} onClick={() => setActiveTab("seasons")}>
+                    <GridIcon size={18} />
+                    <div style={{ fontSize: 12 }}>Сезоны</div>
+                </NavItem>
+
+                <NavItem active={activeTab === "profile"} onClick={() => setActiveTab("profile")}>
+                    <User size={18} />
+                    <div style={{ fontSize: 12 }}>Профиль</div>
+                </NavItem>
+            </BottomNav>
+        </Page>
     );
 };
 
