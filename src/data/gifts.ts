@@ -60,3 +60,4 @@ export const gifts: Gift[] = [
 ];
 
 export const tonLogo = "https://ton.org/download/ton_symbol.png";
+export const mainLogo = "https://podarki-tg.com/wp-content/uploads/2025/06/image-520.png";

@@ -3,7 +3,7 @@ import ProfilePage from "./ProfilePage";
 import MarketPage from "./MarketPage";
 import PortfolioPage from "./PortfolioPage";
 import GiftsStatsPage from "./GiftsStatsPage";
-import { Gift, gifts } from "./data/gifts"; // если нужны иконки для маркет
+import LoadingScreen from "./LoadingScreen"; // Лоадинг экран
 
 import { Home, PieChart, ShoppingBag, User } from "lucide-react";
 
@@ -11,6 +11,7 @@ type Page = "profile" | "market" | "portfolio" | "gifts-stats";
 
 const App: React.FC = () => {
     const [currentPage, setCurrentPage] = useState<Page>("profile");
+    const [loading, setLoading] = useState(true);
 
     const renderPage = () => {
         switch (currentPage) {
@@ -34,8 +35,12 @@ const App: React.FC = () => {
         { key: "profile", label: "Профиль", icon: <User size={24} /> },
     ];
 
+    if (loading) {
+        return <LoadingScreen onComplete={() => setLoading(false)} />;
+    }
+
     return (
-        <div style={{ paddingBottom: "80px" }}>
+        <div style={{ paddingBottom: 80 }}>
             {renderPage()}
 
             {/* Нижняя навигация */}

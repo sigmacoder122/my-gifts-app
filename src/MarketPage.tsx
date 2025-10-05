@@ -79,13 +79,9 @@ const Balance = styled.div`
 const FilterRow = styled.div`
   display: flex;
   gap: 8px;
-  overflow-x: auto;
+  overflow-x: hidden;
   padding-bottom: 8px;
   margin-bottom: 16px;
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
 `;
 
 const FilterButton = styled.button<{ active?: boolean }>`
@@ -152,6 +148,7 @@ const Price = styled.div`
   font-weight: 600;
   font-size: 14px;
   margin-bottom: 4px;
+  color: #00c2ff;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -272,7 +269,6 @@ const getChart = (price: number) => {
 export default function MarketPage() {
     const [sortField, setSortField] = useState<"price" | "growth">("price");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-    const [dropdownOpen, setDropdownOpen] = useState(false);
     const [selectedGift, setSelectedGift] = useState<any>(null);
     const [investment, setInvestment] = useState<number | "">("");
     const [keyboardOpen, setKeyboardOpen] = useState(false);
@@ -290,7 +286,7 @@ export default function MarketPage() {
 
     const calcGrowth =
         selectedGift && investment
-            ? ((selectedGift.growth / 100) * Number(investment)).toFixed(2)
+            ? Math.round((selectedGift.growth / 100) * Number(investment))
             : 0;
 
     const confirm = () => {
@@ -304,6 +300,7 @@ export default function MarketPage() {
 
     useEffect(() => {
         if (selectedGift && inputRef.current) {
+            inputRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
             inputRef.current.focus();
         }
     }, [selectedGift]);
@@ -331,11 +328,16 @@ export default function MarketPage() {
                 >
                     По росту
                 </FilterButton>
-
-                <FilterButton onClick={() => setSortOrder("asc")} active={sortOrder==="asc"}>
+                <FilterButton
+                    active={sortOrder === "asc"}
+                    onClick={() => setSortOrder("asc")}
+                >
                     По возрастанию
                 </FilterButton>
-                <FilterButton onClick={() => setSortOrder("desc")} active={sortOrder==="desc"}>
+                <FilterButton
+                    active={sortOrder === "desc"}
+                    onClick={() => setSortOrder("desc")}
+                >
                     По убыванию
                 </FilterButton>
             </FilterRow>
