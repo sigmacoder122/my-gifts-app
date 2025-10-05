@@ -1,3 +1,4 @@
+// src/PortfolioPage.tsx
 import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import {
@@ -10,9 +11,9 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { ArrowUp, ArrowDown } from "lucide-react";
-import { gifts, tonLogo } from "./data/gifts";
+import { gifts, tonLogo, Gift } from "./data/gifts";
 
-// --- Анимации ---
+/* ===== Анимации ===== */
 const glowAnim = keyframes`
   0% { box-shadow: 0 0 5px #00aaff; }
   50% { box-shadow: 0 0 20px #00aaff; }
@@ -25,19 +26,19 @@ const growNumber = keyframes`
   100% { transform: scale(1); opacity: 1; }
 `;
 
-// --- Стили ---
+/* ===== Стили ===== */
 const Container = styled.div`
   background: #121212;
   min-height: 100vh;
-  padding: 20px 25px 30px;
+  padding: 20px;
   color: #fff;
-  font-family: 'Arial', sans-serif;
+  font-family: Arial, sans-serif;
 `;
 
 const Header = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 25px;
 `;
 
@@ -76,6 +77,10 @@ const GraphWrapper = styled.div`
   margin-bottom: 25px;
 `;
 
+interface TableColumnProps {
+    flex?: number;
+}
+
 const TableHeader = styled.div`
   display: flex;
   gap: 15px;
@@ -85,11 +90,15 @@ const TableHeader = styled.div`
   cursor: pointer;
 `;
 
-const TableColumn = styled.div<{ flex?: number }>`
+const TableColumn = styled.div<TableColumnProps>`
   flex: ${(props) => props.flex || 1};
   display: flex;
   align-items: center;
 `;
+
+interface GiftGrowthProps {
+    positive?: boolean;
+}
 
 const GiftCard = styled.div`
   display: flex;
@@ -119,7 +128,7 @@ const GiftPrice = styled.div`
   font-size: 14px;
 `;
 
-const GiftGrowth = styled.div<{ positive: boolean }>`
+const GiftGrowth = styled.div<GiftGrowthProps>`
   color: ${(props) => (props.positive ? "#0f0" : "#f55")};
   display: flex;
   align-items: center;
@@ -127,21 +136,29 @@ const GiftGrowth = styled.div<{ positive: boolean }>`
   font-size: 14px;
 `;
 
-// --- Компонент ---
+/* ===== Компонент ===== */
+interface SortConfig {
+    key: keyof Gift;
+    direction: "asc" | "desc";
+}
+
+interface TooltipProps {
+    active?: boolean;
+    payload?: any[];
+}
+
 const PortfolioPage: React.FC = () => {
     const [balance, setBalance] = useState(1250);
     const [animatedBalance, setAnimatedBalance] = useState(balance);
-
-    const [portfolio, setPortfolio] = useState(
+    const [portfolio, setPortfolio] = useState<Gift[]>(
         gifts.map((gift) => ({
             ...gift,
-            invested: Math.floor(Math.random() * 100) + 50, // пример суммы инвестиций
+            invested: Math.floor(Math.random() * 100) + 50,
         }))
     );
 
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+    const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
-    // Анимация баланса
     useEffect(() => {
         let start = animatedBalance;
         const end = balance;
@@ -154,6 +171,20 @@ const PortfolioPage: React.FC = () => {
         step();
     }, [balance]);
 
+    const requestSort = (key: keyof Gift) => {
+        let direction: "asc" | "desc" = "asc";
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+            direction = "desc";
+        }
+        setSortConfig({ key, direction });
+        const sorted = [...portfolio].sort((a, b) => {
+            if (a[key] < b[key]) return direction === "asc" ? -1 : 1;
+            if (a[key] > b[key]) return direction === "asc" ? 1 : -1;
+            return 0;
+        });
+        setPortfolio(sorted);
+    };
+
     const chartData = [
         { day: "Пн", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 0.95 },
         { day: "Вт", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.05 },
@@ -164,7 +195,7 @@ const PortfolioPage: React.FC = () => {
         { day: "Вс", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.22 },
     ];
 
-    const CustomTooltip = ({ active, payload }: any) => {
+    const CustomTooltip: React.FC<TooltipProps> = ({ active, payload }) => {
         if (active && payload && payload.length) {
             return (
                 <div style={{ background: "#292929", padding: 10, borderRadius: 10 }}>
@@ -176,25 +207,9 @@ const PortfolioPage: React.FC = () => {
         return null;
     };
 
-    // Сортировка
-    const requestSort = (key: string) => {
-        let direction: "asc" | "desc" = "asc";
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
-            direction = "desc";
-        }
-        setSortConfig({ key, direction });
-        const sorted = [...portfolio].sort((a: any, b: any) => {
-            if (a[key] < b[key]) return direction === "asc" ? -1 : 1;
-            if (a[key] > b[key]) return direction === "asc" ? 1 : -1;
-            return 0;
-        });
-        setPortfolio(sorted);
-    };
-
     return (
         <Container>
             <Header>
-                <SectionTitle>Мой Портфель</SectionTitle>
                 <BalanceWrapper>
                     <TonIcon src={tonLogo} alt="TON" />
                     <AnimatedNumber>{animatedBalance}</AnimatedNumber>
@@ -203,7 +218,7 @@ const PortfolioPage: React.FC = () => {
 
             <SectionTitle>График инвестиций</SectionTitle>
             <GraphWrapper>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={chartData}>
                         <CartesianGrid stroke="#333" strokeDasharray="3 3" />
                         <XAxis dataKey="day" stroke="#00aaff" />

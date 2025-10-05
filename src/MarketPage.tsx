@@ -1,7 +1,7 @@
 // src/MarketPage.tsx
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
-import { ArrowUp, ArrowDown, Gift as GiftIcon, Grid as GridIcon, User } from "lucide-react";
+import { ArrowUp, ArrowDown, Gift as GiftIcon } from "lucide-react";
 import {
     ResponsiveContainer,
     LineChart,
@@ -43,6 +43,11 @@ const cardHoverAnim = keyframes`
   100% { transform: translateY(0px); }
 `;
 
+const modalShow = keyframes`
+  0% { opacity: 0; transform: scale(0.95);}
+  100% { opacity: 1; transform: scale(1);}
+`;
+
 /* ===== Стили ===== */
 const Page = styled.div`
   background: #0f0f10;
@@ -79,6 +84,50 @@ const BalanceBubble = styled.div`
   font-weight: 700;
   color: #dff6ff;
   box-shadow: 0 6px 20px rgba(0, 170, 255, 0.06);
+`;
+
+const SortRow = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+`;
+
+const SortButton = styled.button<{ active?: boolean }>`
+  background: ${(p) => (p.active ? "#00aaff" : "rgba(255,255,255,0.05)")};
+  color: ${(p) => (p.active ? "#041016" : "#fff")};
+  border: none;
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s;
+  &:hover {
+    background: #00c2ff;
+    color: #041016;
+  }
+`;
+
+const SortTypeWrapper = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const SortRadioLabel = styled.label<{ active?: boolean }>`
+  background: ${(p) => (p.active ? "#00aaff" : "rgba(255,255,255,0.05)")};
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  color: ${(p) => (p.active ? "#041016" : "#fff")};
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  &:hover {
+    background: #00c2ff;
+    color: #041016;
+  }
 `;
 
 const Grid = styled.div`
@@ -185,26 +234,24 @@ const ModalBox = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  touch-action: pan-y;
-  position: relative;
+  animation: ${modalShow} 0.3s ease forwards;
 `;
 
 const InputRow = styled.div`
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 12px;
 `;
 
 const Input = styled.input`
   flex: 1;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.1);
   background: #121214;
   color: #fff;
   font-size: 16px;
   outline: none;
-  -webkit-text-size-adjust: none;
   &::placeholder { color: rgba(255,255,255,0.4); }
 `;
 
@@ -212,6 +259,27 @@ const Result = styled.div`
   font-size: 16px;
   font-weight: 700;
   color: #00c2ff;
+`;
+
+const ButtonRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const ModalButton = styled.button<{ confirm?: boolean }>`
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 12px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  background: ${(p) => (p.confirm ? "#00c2ff" : "rgba(255,255,255,0.05)")};
+  color: ${(p) => (p.confirm ? "#041016" : "#fff")};
+  transition: all 0.2s;
+  &:hover {
+    background: ${(p) => (p.confirm ? "#00aaff" : "rgba(255,255,255,0.1)")};
+  }
 `;
 
 /* ===== Mock графика ===== */
@@ -230,22 +298,27 @@ const MarketPage: React.FC = () => {
     const [selected, setSelected] = useState<Gift | null>(null);
     const [investment,setInvestment] = useState<number>(0);
     const [sortType,setSortType] = useState<"price"|"growth">("price");
+    const [sortOrder,setSortOrder] = useState<"asc"|"desc">("asc");
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(()=>{
+        document.body.style.overflow = selected ? "hidden" : "auto";
+    },[selected]);
 
     const sortedGifts = useMemo(()=>{
         const arr=[...giftsData];
-        if(sortType==="price") return arr.sort((a,b)=>a.price-b.price);
-        if(sortType==="growth") return arr.sort((a,b)=>b.growth-a.growth);
+        if(sortType==="price") return arr.sort((a,b)=>sortOrder==="asc"?a.price-b.price:b.price-a.price);
+        if(sortType==="growth") return arr.sort((a,b)=>sortOrder==="asc"?a.growth-b.growth:b.growth-a.growth);
         return arr;
-    },[sortType]);
+    },[sortType, sortOrder]);
 
     const calculatedGrowth = selected ? +(investment*selected.growth/100).toFixed(2):0;
 
-    useEffect(()=>{
-        if(selected && inputRef.current){
-            inputRef.current.scrollIntoView({behavior:"smooth", block:"center"});
-        }
-    },[selected]);
+    const handleConfirm = () => {
+        alert(`Вы инвестировали ${investment} TON в ${selected?.name}, прирост: ${calculatedGrowth} TON`);
+        setSelected(null);
+        setInvestment(0);
+    };
 
     return (
         <Page>
@@ -254,6 +327,21 @@ const MarketPage: React.FC = () => {
                 <BalanceBubble><GiftIcon size={16}/><div>0 TON</div></BalanceBubble>
             </TitleRow>
 
+            <SortRow>
+                <SortButton active={sortType==="price"} onClick={()=>setSortType("price")}>Сортировать по цене</SortButton>
+                <SortButton active={sortType==="growth"} onClick={()=>setSortType("growth")}>Сортировать по росту</SortButton>
+                <SortTypeWrapper>
+                    <SortRadioLabel active={sortOrder==="asc"}>
+                        <input type="radio" name="order" value="asc" style={{display:"none"}} onChange={()=>setSortOrder("asc")} checked={sortOrder==="asc"} />
+                        По возрастанию
+                    </SortRadioLabel>
+                    <SortRadioLabel active={sortOrder==="desc"}>
+                        <input type="radio" name="order" value="desc" style={{display:"none"}} onChange={()=>setSortOrder("desc")} checked={sortOrder==="desc"} />
+                        По убыванию
+                    </SortRadioLabel>
+                </SortTypeWrapper>
+            </SortRow>
+
             <Grid>
                 {sortedGifts.map(g=>(
                     <Card key={g.id} onClick={()=>{setSelected(g); setInvestment(0)}}>
@@ -261,7 +349,9 @@ const MarketPage: React.FC = () => {
                         <Name>{g.name}</Name>
                         <InfoRow>
                             <PriceBadge>{g.price} TON</PriceBadge>
-                            <GrowthBadge positive={g.growth>=0}>{g.growth>=0?<ArrowUp size={12}/>:<ArrowDown size={12}/>} {Math.abs(g.growth)}%</GrowthBadge>
+                            <GrowthBadge positive={g.growth>=0}>
+                                {g.growth>=0?<ArrowUp size={12}/>:<ArrowDown size={12}/>} {Math.abs(g.growth)}%
+                            </GrowthBadge>
                         </InfoRow>
                     </Card>
                 ))}
@@ -288,14 +378,21 @@ const MarketPage: React.FC = () => {
                             <Input
                                 ref={inputRef}
                                 type="number"
-                                inputMode="decimal"
+                                min={0}
                                 placeholder="Введите сумму инвестиций (TON)"
                                 value={investment}
-                                onChange={e=>setInvestment(Number(e.target.value))}
+                                onChange={e=>{
+                                    const val = e.target.value.replace(/^0+/, '');
+                                    setInvestment(Number(val));
+                                }}
                             />
+                            <Result>Прирост: {calculatedGrowth} TON ({selected.growth}%)</Result>
                         </InputRow>
 
-                        <Result>Прирост: {calculatedGrowth} TON ({selected.growth}%)</Result>
+                        <ButtonRow>
+                            <ModalButton onClick={()=>setSelected(null)}>Отмена</ModalButton>
+                            <ModalButton confirm onClick={handleConfirm}>Подтвердить</ModalButton>
+                        </ButtonRow>
                     </ModalBox>
                 </ModalOverlay>
             )}

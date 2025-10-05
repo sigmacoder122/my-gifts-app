@@ -4,6 +4,7 @@ export interface Gift {
     price: number; // в TON
     growth: number; // рост за неделю в %
     img: string; // ссылка на изображение
+    invested: number; // добавили поле "инвестировано"
 }
 
 // Массив подарков
@@ -13,6 +14,7 @@ export const gifts: Gift[] = [
         name: "Push pepe",
         price: 3450,
         growth: 5,
+        invested: 200, // пример инвестиции
         img: "https://cdn.changes.tg/gifts/models/Plush%20Pepe/png/Original.png"
     },
     {
@@ -20,6 +22,7 @@ export const gifts: Gift[] = [
         name: "Durov cap",
         price: 2322,
         growth: 10,
+        invested: 150,
         img: "https://cdn.changes.tg/gifts/models/Durov%27s%20Cap/png/Original.png"
     },
     {
@@ -27,6 +30,7 @@ export const gifts: Gift[] = [
         name: "Signet ring",
         price: 20,
         growth: 8,
+        invested: 50,
         img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/signetring/Rose%20Gold.webp"
     },
     {
@@ -34,6 +38,7 @@ export const gifts: Gift[] = [
         name: "Snoop sigare",
         price: 25,
         growth: 12,
+        invested: 70,
         img: "https://storage.beee.pro/game_items/39238/NTtmBjZ3yUxIToDTrHFLseN2YaJKWWgXPj32B1V6.webp"
     },
     {
@@ -41,6 +46,7 @@ export const gifts: Gift[] = [
         name: "Genie lamp",
         price: 30,
         growth: 7,
+        invested: 40,
         img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/genielamp/Lightning.webp"
     },
     {
@@ -48,6 +54,7 @@ export const gifts: Gift[] = [
         name: "Scared cat",
         price: 18,
         growth: 15,
+        invested: 60,
         img: "https://podarki-tg.com/wp-content/uploads/2025/06/image-863.png"
     },
 ];

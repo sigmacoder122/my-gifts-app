@@ -1,271 +1,243 @@
-// src/ProfilePage.jsx
-import React, { useState, useEffect } from "react";
+// src/ProfilePage.tsx
+import React from "react";
 import styled, { keyframes } from "styled-components";
-import { ArrowUp, ArrowDown } from "lucide-react";
-import { gifts, tonLogo } from "./data/gifts";
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip as RechartsTooltip,
-    ResponsiveContainer,
-} from "recharts";
+import { ArrowRight } from "lucide-react";
 
 /* ===== Анимации ===== */
 const glowAnim = keyframes`
   0% { box-shadow: 0 0 5px #00aaff; }
-  50% { box-shadow: 0 0 20px #00aaff; }
+  50% { box-shadow: 0 0 15px #00aaff; }
   100% { box-shadow: 0 0 5px #00aaff; }
 `;
 
-const growNumber = keyframes`
-  0% { transform: scale(0.8); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-`;
-
-/* ===== Стили ===== */
-const Container = styled.div`
-  background: #121212;
+const Page = styled.div`
+  background: #0f0f10;
   min-height: 100vh;
-  padding: 20px 16px 30px;
+  padding: 16px;
   color: #fff;
-  font-family: Arial, sans-serif;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  display: flex;
+  flex-direction: column;
 `;
 
-const Header = styled.div`
+const TopRow = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  margin-bottom: 25px;
+  gap: 12px;
+  margin-bottom: 24px;
 `;
 
-const BalanceWrapper = styled.div`
+const TonBalance = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: #1e1e1e;
-  padding: 8px 15px;
-  border-radius: 50px;
-  border: 2px solid #00aaff;
-  font-weight: bold;
+  gap: 6px;
+  background: linear-gradient(90deg, #083248, #0a3048);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: #dff6ff;
+  box-shadow: 0 6px 20px rgba(0, 170, 255, 0.06);
 `;
 
 const TonIcon = styled.img`
   width: 24px;
   height: 24px;
-  animation: ${glowAnim} 1.5s infinite;
+  object-fit: contain;
 `;
 
-const AnimatedNumber = styled.span`
-  display: inline-block;
-  animation: ${growNumber} 0.5s;
-`;
-
-const ProfileRow = styled.div`
+const CenterProfile = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 32px;
 `;
 
-const ProfileAvatar = styled.img`
-  width: 50px;
-  height: 50px;
+const Avatar = styled.img`
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  object-fit: cover;
+  border: 3px solid #00c2ff;
+  padding: 2px;
+  margin-bottom: 12px;
 `;
 
-const ProfileName = styled.div`
-  font-weight: bold;
+const Nickname = styled.div`
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+`;
+
+const StatsRow = styled.div`
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 32px;
+`;
+
+const StatCard = styled.div`
+  background: #121214;
+  padding: 16px;
+  border-radius: 16px;
+  flex: 1;
+  margin: 0 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,0.05);
+  cursor: default;
+`;
+
+const StatLabel = styled.div`
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+`;
+
+const StatValue = styled.div`
+  font-size: 18px;
+  font-weight: 700;
+  color: #00c2ff;
+`;
+
+const ReferralCard = styled.div`
+  background: #1a1a1f;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+`;
+
+const ReferralTitle = styled.div`
+  font-weight: 700;
+  color: #fff;
   font-size: 16px;
 `;
 
-const SectionTitle = styled.div`
-  font-weight: bold;
-  font-size: 18px;
-  margin-bottom: 15px;
+const ReferralText = styled.div`
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
 `;
 
-const GraphWrapper = styled.div`
-  background: #1e1e1e;
-  border-radius: 20px;
-  padding: 15px;
-  margin-bottom: 25px;
-`;
-
-const TableHeader = styled.div`
+const ReferralRow = styled.div`
   display: flex;
-  gap: 15px;
-  font-weight: bold;
-  padding: 10px 0;
-  border-bottom: 2px solid #333;
-  cursor: pointer;
-`;
-
-const TableColumn = styled.div`
-  flex: ${(props) => props.flex || 1};
-  display: flex;
+  justify-content: space-between;
   align-items: center;
 `;
 
-const GiftCard = styled.div`
+const ReferralInfo = styled.div`
   display: flex;
+  flex-direction: column;
+`;
+
+const ReferralPercent = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+`;
+
+const ReferralDescription = styled.div`
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+`;
+
+const CashbackRow = styled.div`
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 15px;
+`;
+
+const CashbackInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const CashbackLabel = styled.div`
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+`;
+
+const CashbackDesc = styled.div`
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+`;
+
+const InviteButton = styled.button`
+  background: #00c2ff;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
   padding: 12px 0;
-  border-bottom: 1px solid #292929;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-top: 16px;
   transition: all 0.2s;
   &:hover {
-    background: #1a1a1a;
+    background: #00aaff;
   }
 `;
 
-const GiftImage = styled.img`
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
-  object-fit: cover;
-`;
-
-const GiftName = styled.div`
-  font-size: 16px;
-`;
-
-const GiftPrice = styled.div`
-  color: #fff;
-  font-size: 14px;
-`;
-
-const GiftGrowth = styled.div`
-  color: ${(props) => (props.positive ? "#0f0" : "#f55")};
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 14px;
-`;
+/* ===== Заглушки ===== */
+const mockAvatar = "https://cdn-icons-png.flaticon.com/512/3177/3177440.png"; // пример аватарки
+const tonLogo = "https://ton.org/download/ton_symbol.png";
 
 /* ===== Компонент ===== */
-const ProfilePage = () => {
-    const [balance, setBalance] = useState(1250);
-    const [animatedBalance, setAnimatedBalance] = useState(balance);
-
-    const [portfolio, setPortfolio] = useState(
-        gifts.map((gift) => ({
-            ...gift,
-            invested: Math.floor(Math.random() * 100) + 50,
-        }))
-    );
-
-    const [sortConfig, setSortConfig] = useState(null);
-    const [telegramUser, setTelegramUser] = useState({}); // <- просто JS
-
-    // Получаем данные пользователя Telegram через Web App
-    useEffect(() => {
-        if (window?.Telegram?.WebApp?.initDataUnsafe) {
-            setTelegramUser(window.Telegram.WebApp.initDataUnsafe.user || {});
-        }
-    }, []);
-
-    // Анимация баланса
-    useEffect(() => {
-        let start = animatedBalance;
-        const end = balance;
-        const step = () => {
-            start += (end - start) / 5;
-            if (Math.abs(start - end) < 0.01) start = end;
-            setAnimatedBalance(parseFloat(start.toFixed(2)));
-            if (start !== end) requestAnimationFrame(step);
-        };
-        step();
-    }, [balance]);
-
-    const chartData = [
-        { day: "Пн", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 0.95 },
-        { day: "Вт", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.05 },
-        { day: "Ср", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.1 },
-        { day: "Чт", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.15 },
-        { day: "Пт", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.2 },
-        { day: "Сб", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.18 },
-        { day: "Вс", value: portfolio.reduce((acc, g) => acc + g.invested, 0) * 1.22 },
-    ];
-
-    const CustomTooltip = ({ active, payload }) => {
-        if (active && payload && payload.length) {
-            return (
-                <div style={{ background: "#292929", padding: 10, borderRadius: 10 }}>
-                    <p>{payload[0].payload.day}</p>
-                    <p>{payload[0].value.toFixed(2)} TON</p>
-                </div>
-            );
-        }
-        return null;
-    };
-
-    // Сортировка
-    const requestSort = (key) => {
-        let direction = "asc";
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
-            direction = "desc";
-        }
-        setSortConfig({ key, direction });
-        const sorted = [...portfolio].sort((a, b) => {
-            if (a[key] < b[key]) return direction === "asc" ? -1 : 1;
-            if (a[key] > b[key]) return direction === "asc" ? 1 : -1;
-            return 0;
-        });
-        setPortfolio(sorted);
-    };
-
+const ProfilePage: React.FC = () => {
     return (
-        <Container>
-            <Header>
-                <ProfileRow>
-                    {telegramUser.photo_url && <ProfileAvatar src={telegramUser.photo_url} />}
-                    <ProfileName>{telegramUser.username || "Пользователь"}</ProfileName>
-                </ProfileRow>
-                <BalanceWrapper>
+        <Page>
+            <TopRow>
+                <TonBalance>
                     <TonIcon src={tonLogo} alt="TON" />
-                    <AnimatedNumber>{animatedBalance}</AnimatedNumber>
-                </BalanceWrapper>
-            </Header>
+                    <div>12 345 TON</div>
+                </TonBalance>
+            </TopRow>
 
-            <SectionTitle>График инвестиций</SectionTitle>
-            <GraphWrapper>
-                <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={chartData}>
-                        <CartesianGrid stroke="#333" strokeDasharray="3 3" />
-                        <XAxis dataKey="day" stroke="#00aaff" />
-                        <YAxis stroke="#00aaff" />
-                        <RechartsTooltip content={<CustomTooltip />} />
-                        <Line type="monotone" dataKey="value" stroke="#00aaff" strokeWidth={3} dot={{ r: 5, fill: "#00aaff" }} />
-                    </LineChart>
-                </ResponsiveContainer>
-            </GraphWrapper>
+            <CenterProfile>
+                <Avatar src={mockAvatar} alt="Avatar" />
+                <Nickname>@nickname</Nickname>
+            </CenterProfile>
 
-            <SectionTitle>Инвестированные подарки</SectionTitle>
-            <TableHeader>
-                <TableColumn flex={2} onClick={() => requestSort("name")}>Название</TableColumn>
-                <TableColumn flex={1} onClick={() => requestSort("invested")}>Сумма</TableColumn>
-                <TableColumn flex={1} onClick={() => requestSort("growth")}>Рост</TableColumn>
-            </TableHeader>
+            <StatsRow>
+                <StatCard>
+                    <StatLabel>Общий объём</StatLabel>
+                    <StatValue>45 678 TON</StatValue>
+                </StatCard>
+                <StatCard>
+                    <StatLabel>Общий прирост</StatLabel>
+                    <StatValue>+12 345 TON</StatValue>
+                </StatCard>
+                <StatCard>
+                    <StatLabel>Друзья приглашено</StatLabel>
+                    <StatValue>23</StatValue>
+                </StatCard>
+            </StatsRow>
 
-            {portfolio.map((gift) => (
-                <GiftCard key={gift.id}>
-                    <GiftImage src={gift.img} alt={gift.name} />
-                    <TableColumn flex={2}><GiftName>{gift.name}</GiftName></TableColumn>
-                    <TableColumn flex={1}><GiftPrice>{gift.invested} TON</GiftPrice></TableColumn>
-                    <TableColumn flex={1}>
-                        <GiftGrowth positive={gift.growth >= 0}>
-                            {gift.growth >= 0 ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
-                            {Math.abs(gift.growth)}%
-                        </GiftGrowth>
-                    </TableColumn>
-                </GiftCard>
-            ))}
-        </Container>
+            <ReferralCard>
+                <ReferralTitle>Приглашайте друзей</ReferralTitle>
+                <ReferralText>Зарабатывайте TON от их покупок</ReferralText>
+
+                <ReferralRow>
+                    <ReferralInfo>
+                        <ReferralPercent>20–50%</ReferralPercent>
+                        <ReferralDescription>Реферальная комиссия</ReferralDescription>
+                    </ReferralInfo>
+                    <ArrowRight color="#fff" size={24} />
+                </ReferralRow>
+
+                <CashbackRow>
+                    <CashbackInfo>
+                        <CashbackLabel>Кэшбэк</CashbackLabel>
+                        <CashbackDesc>Зарабатывайте деньги с покупок друзей</CashbackDesc>
+                    </CashbackInfo>
+                </CashbackRow>
+
+                <InviteButton>Пригласи друзей</InviteButton>
+            </ReferralCard>
+        </Page>
     );
 };
 
