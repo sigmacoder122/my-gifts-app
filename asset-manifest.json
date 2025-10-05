@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/my-gifts-app/static/css/main.e6c13ad2.css",
-    "main.js": "/my-gifts-app/static/js/main.62e3ccef.js",
+    "main.js": "/my-gifts-app/static/js/main.2a043543.js",
     "index.html": "/my-gifts-app/index.html",
     "main.e6c13ad2.css.map": "/my-gifts-app/static/css/main.e6c13ad2.css.map",
-    "main.62e3ccef.js.map": "/my-gifts-app/static/js/main.62e3ccef.js.map"
+    "main.2a043543.js.map": "/my-gifts-app/static/js/main.2a043543.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.62e3ccef.js"
+    "static/js/main.2a043543.js"
   ]
 }
