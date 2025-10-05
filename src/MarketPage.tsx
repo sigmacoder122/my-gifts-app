@@ -1,5 +1,5 @@
 // src/MarketPage.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import { ArrowUp, ArrowDown, Gift as GiftIcon, Grid as GridIcon, User } from "lucide-react";
 import {
@@ -24,6 +24,8 @@ const glow = keyframes`
 const Page = styled.div`
   background: #0f0f10;
   min-height: 100vh;
+  width: 100vw;
+  overflow-x: hidden;
   padding: 16px;
   color: #fff;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
@@ -76,12 +78,12 @@ const Select = styled.select`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Всегда 3 колонки на экране */
+  grid-template-columns: repeat(2, 1fr); /* два подарка на мобильных */
   gap: 12px;
   margin-top: 8px;
 
-  @media (max-width: 600px) {
-    grid-template-columns: repeat(3, 1fr); /* на мобильных тоже 3 */
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, 1fr); /* три на ПК */
   }
 `;
 
