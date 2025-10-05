@@ -1,5 +1,5 @@
 // src/MarketPage.tsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import { ArrowUp, ArrowDown, Gift as GiftIcon, Grid as GridIcon, User } from "lucide-react";
 import {
@@ -11,26 +11,48 @@ import {
     CartesianGrid,
     Tooltip as RechartsTooltip,
 } from "recharts";
-import { gifts as giftsData, Gift as GiftType } from "./data/gifts";
 
-/* ====== АНИМАЦИИ ====== */
-const glow = keyframes`
-  0% { box-shadow: 0 0 0px rgba(0,170,255,0.0); }
-  50% { box-shadow: 0 6px 22px rgba(0,170,255,0.18); }
-  100% { box-shadow: 0 0 0px rgba(0,170,255,0.0); }
+/* ===== Данные подарков ===== */
+export interface Gift {
+    id: number;
+    name: string;
+    price: number;
+    growth: number;
+    img: string;
+}
+
+export const giftsData: Gift[] = [
+    { id: 1, name: "Push pepe", price: 3450, growth: 5, img: "https://cdn.changes.tg/gifts/models/Plush%20Pepe/png/Original.png" },
+    { id: 2, name: "Durov cap", price: 2322, growth: 10, img: "https://cdn.changes.tg/gifts/models/Durov%27s%20Cap/png/Original.png" },
+    { id: 3, name: "Signet ring", price: 20, growth: 8, img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/signetring/Rose%20Gold.webp" },
+    { id: 4, name: "Snoop sigare", price: 25, growth: 12, img: "https://storage.beee.pro/game_items/39238/NTtmBjZ3yUxIToDTrHFLseN2YaJKWWgXPj32B1V6.webp" },
+    { id: 5, name: "Genie lamp", price: 30, growth: 7, img: "https://telegifter.ru/wp-content/themes/gifts/assets/img/gifts/genielamp/Lightning.webp" },
+    { id: 6, name: "Scared cat", price: 18, growth: 15, img: "https://podarki-tg.com/wp-content/uploads/2025/06/image-863.png" },
+];
+
+/* ===== Анимации ===== */
+const glowAnim = keyframes`
+  0% { box-shadow: 0 0 5px #00aaff; }
+  50% { box-shadow: 0 0 20px #00aaff; }
+  100% { box-shadow: 0 0 5px #00aaff; }
 `;
 
-/* ====== СТИЛИ ====== */
+const cardHoverAnim = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-2px); }
+  100% { transform: translateY(0px); }
+`;
+
+/* ===== Стили ===== */
 const Page = styled.div`
   background: #0f0f10;
   min-height: 100vh;
-  width: 100vw;
-  overflow-x: hidden;
   padding: 16px;
   color: #fff;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 `;
 
 const TitleRow = styled.div`
@@ -59,31 +81,14 @@ const BalanceBubble = styled.div`
   box-shadow: 0 6px 20px rgba(0, 170, 255, 0.06);
 `;
 
-const SortRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-`;
-
-const Select = styled.select`
-  background: #121214;
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 6px 10px;
-  border-radius: 8px;
-  outline: none;
-  font-size: 14px;
-`;
-
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* два подарка на мобильных */
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-top: 8px;
 
   @media (min-width: 768px) {
-    grid-template-columns: repeat(3, 1fr); /* три на ПК */
+    grid-template-columns: repeat(3, 1fr);
   }
 `;
 
@@ -98,16 +103,15 @@ const Card = styled.div`
   align-items: center;
   transition: all 0.25s ease;
   cursor: pointer;
-
   &:hover {
-    transform: translateY(-4px);
+    animation: ${cardHoverAnim} 0.5s ease infinite;
     box-shadow: 0 10px 25px rgba(0, 170, 255, 0.08);
   }
 `;
 
 const ImgWrap = styled.div`
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 1/1;
   border-radius: 12px;
   border: 2px solid rgba(0,170,255,0.25);
   background: radial-gradient(circle at 50% 50%, rgba(0,170,255,0.1), rgba(255,255,255,0.02));
@@ -115,7 +119,7 @@ const ImgWrap = styled.div`
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  animation: ${glow} 3.2s infinite;
+  animation: ${glowAnim} 3.2s infinite;
 `;
 
 const Img = styled.img`
@@ -172,7 +176,7 @@ const ModalOverlay = styled.div`
 
 const ModalBox = styled.div`
   width: 100%;
-  max-width: 640px;
+  max-width: 480px;
   background: #101214;
   border-radius: 12px;
   padding: 16px;
@@ -181,6 +185,8 @@ const ModalBox = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+  touch-action: pan-y;
+  position: relative;
 `;
 
 const InputRow = styled.div`
@@ -191,16 +197,15 @@ const InputRow = styled.div`
 
 const Input = styled.input`
   flex: 1;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.1);
   background: #121214;
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
-  &::placeholder {
-    color: rgba(255,255,255,0.4);
-  }
+  -webkit-text-size-adjust: none;
+  &::placeholder { color: rgba(255,255,255,0.4); }
 `;
 
 const Result = styled.div`
@@ -209,171 +214,91 @@ const Result = styled.div`
   color: #00c2ff;
 `;
 
-const BottomNav = styled.nav`
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: 0 8px 8px;
-  background: linear-gradient(180deg, rgba(18,18,18,0.95), rgba(10,10,10,0.98));
-  border-radius: 16px;
-  padding: 10px 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  gap: 6px;
-  z-index: 100;
-  border: 1px solid rgba(255,255,255,0.03);
-`;
-
-const NavItem = styled.button<{ active?: boolean }>`
-  background: ${(p) => (p.active ? "#0a2b3a" : "transparent")};
-  border: none;
-  color: ${(p) => (p.active ? "#00aaff" : "#e7f6ff")};
-  padding: 6px 10px;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.2s;
-  &:hover {
-    color: #00aaff;
-  }
-`;
-
-/* ====== Мок графика ====== */
-const sampleChart = (price: number) => [
-    { day: "Пн", value: +(price * 0.95).toFixed(2) },
-    { day: "Вт", value: +(price * 1.02).toFixed(2) },
-    { day: "Ср", value: +(price * 1.08).toFixed(2) },
-    { day: "Чт", value: +(price * 1.12).toFixed(2) },
-    { day: "Пт", value: +(price * 1.15).toFixed(2) },
-    { day: "Сб", value: +(price * 1.18).toFixed(2) },
-    { day: "Вс", value: +(price * 1.2).toFixed(2) },
+/* ===== Mock графика ===== */
+const sampleChart = (price:number) => [
+    { day: "Пн", value: +(price*0.95).toFixed(2)},
+    { day: "Вт", value: +(price*1.02).toFixed(2)},
+    { day: "Ср", value: +(price*1.08).toFixed(2)},
+    { day: "Чт", value: +(price*1.12).toFixed(2)},
+    { day: "Пт", value: +(price*1.15).toFixed(2)},
+    { day: "Сб", value: +(price*1.18).toFixed(2)},
+    { day: "Вс", value: +(price*1.2).toFixed(2)},
 ];
 
-/* ====== КОМПОНЕНТ ====== */
+/* ===== Компонент ===== */
 const MarketPage: React.FC = () => {
-    const [selected, setSelected] = useState<GiftType | null>(null);
-    const [investment, setInvestment] = useState<number>(0);
-    const [activeTab, setActiveTab] = useState<"market" | "mygifts" | "seasons" | "profile">("market");
-    const [sortType, setSortType] = useState<"price" | "growth">("price");
+    const [selected, setSelected] = useState<Gift | null>(null);
+    const [investment,setInvestment] = useState<number>(0);
+    const [sortType,setSortType] = useState<"price"|"growth">("price");
+    const inputRef = useRef<HTMLInputElement>(null);
 
-    const sortedGifts = useMemo(() => {
-        const arr = [...giftsData];
-        if (sortType === "price") return arr.sort((a, b) => a.price - b.price);
-        if (sortType === "growth") return arr.sort((a, b) => b.growth - a.growth);
+    const sortedGifts = useMemo(()=>{
+        const arr=[...giftsData];
+        if(sortType==="price") return arr.sort((a,b)=>a.price-b.price);
+        if(sortType==="growth") return arr.sort((a,b)=>b.growth-a.growth);
         return arr;
-    }, [sortType]);
+    },[sortType]);
 
-    const calculatedGrowth = selected ? +(investment * selected.growth / 100).toFixed(2) : 0;
+    const calculatedGrowth = selected ? +(investment*selected.growth/100).toFixed(2):0;
+
+    useEffect(()=>{
+        if(selected && inputRef.current){
+            inputRef.current.scrollIntoView({behavior:"smooth", block:"center"});
+        }
+    },[selected]);
 
     return (
         <Page>
             <TitleRow>
                 <PageTitle>Все подарки</PageTitle>
-                <BalanceBubble>
-                    <GiftIcon size={16} />
-                    <div>0 TON</div>
-                </BalanceBubble>
+                <BalanceBubble><GiftIcon size={16}/><div>0 TON</div></BalanceBubble>
             </TitleRow>
 
-            <SortRow>
-                <div>Сортировка:</div>
-                <Select value={sortType} onChange={(e) => setSortType(e.target.value as any)}>
-                    <option value="price">По цене ↑</option>
-                    <option value="growth">По росту ↓</option>
-                </Select>
-            </SortRow>
-
             <Grid>
-                {sortedGifts.map((g) => (
-                    <Card key={g.id} onClick={() => {
-                        setSelected(g);
-                        setInvestment(0);
-                    }}>
-                        <ImgWrap>
-                            <Img src={g.img} alt={g.name} />
-                        </ImgWrap>
+                {sortedGifts.map(g=>(
+                    <Card key={g.id} onClick={()=>{setSelected(g); setInvestment(0)}}>
+                        <ImgWrap><Img src={g.img} /></ImgWrap>
                         <Name>{g.name}</Name>
-
                         <InfoRow>
                             <PriceBadge>{g.price} TON</PriceBadge>
-                            <GrowthBadge positive={g.growth >= 0}>
-                                {g.growth >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-                                {Math.abs(g.growth)}%
-                            </GrowthBadge>
+                            <GrowthBadge positive={g.growth>=0}>{g.growth>=0?<ArrowUp size={12}/>:<ArrowDown size={12}/>} {Math.abs(g.growth)}%</GrowthBadge>
                         </InfoRow>
                     </Card>
                 ))}
             </Grid>
 
             {selected && (
-                <ModalOverlay onClick={() => setSelected(null)}>
-                    <ModalBox onClick={(e) => e.stopPropagation()}>
-                        <h3 style={{ margin: 0 }}>{selected.name}</h3>
-                        <ImgWrap style={{ width: "60%", margin: "12px auto" }}>
-                            <Img src={selected.img} alt={selected.name} />
-                        </ImgWrap>
-
-                        <div style={{ height: 200 }}>
+                <ModalOverlay onClick={()=>setSelected(null)}>
+                    <ModalBox onClick={e=>e.stopPropagation()}>
+                        <h3 style={{margin:0}}>{selected.name}</h3>
+                        <ImgWrap style={{width:"60%", margin:"12px auto"}}><Img src={selected.img}/></ImgWrap>
+                        <div style={{height:200}}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={sampleChart(selected.price)}>
-                                    <CartesianGrid stroke="rgba(255,255,255,0.03)" />
-                                    <XAxis dataKey="day" stroke="#7ed6ff" />
-                                    <YAxis stroke="#7ed6ff" />
-                                    <RechartsTooltip contentStyle={{ background: "#0f1720" }} />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="value"
-                                        stroke="#00c2ff"
-                                        strokeWidth={3}
-                                        dot={{ r: 4, fill: "#00c2ff" }}
-                                    />
+                                    <CartesianGrid stroke="rgba(255,255,255,0.03)"/>
+                                    <XAxis dataKey="day" stroke="#7ed6ff"/>
+                                    <YAxis stroke="#7ed6ff"/>
+                                    <RechartsTooltip contentStyle={{background:"#0f1720"}}/>
+                                    <Line type="monotone" dataKey="value" stroke="#00c2ff" strokeWidth={3} dot={{r:4, fill:"#00c2ff"}}/>
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
 
                         <InputRow>
                             <Input
+                                ref={inputRef}
                                 type="number"
+                                inputMode="decimal"
                                 placeholder="Введите сумму инвестиций (TON)"
                                 value={investment}
-                                onChange={(e) => setInvestment(Number(e.target.value))}
+                                onChange={e=>setInvestment(Number(e.target.value))}
                             />
                         </InputRow>
 
-                        <Result>
-                            Прирост: {calculatedGrowth} TON ({selected.growth}%)
-                        </Result>
+                        <Result>Прирост: {calculatedGrowth} TON ({selected.growth}%)</Result>
                     </ModalBox>
                 </ModalOverlay>
             )}
-
-            <BottomNav>
-                <NavItem active={activeTab === "market"} onClick={() => setActiveTab("market")}>
-                    <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 11h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></div>
-                    <div style={{ fontSize: 12 }}>Маркет</div>
-                </NavItem>
-
-                <NavItem active={activeTab === "mygifts"} onClick={() => setActiveTab("mygifts")}>
-                    <GiftIcon size={18} />
-                    <div style={{ fontSize: 12 }}>Мои подарки</div>
-                </NavItem>
-
-                <NavItem active={activeTab === "seasons"} onClick={() => setActiveTab("seasons")}>
-                    <GridIcon size={18} />
-                    <div style={{ fontSize: 12 }}>Сезоны</div>
-                </NavItem>
-
-                <NavItem active={activeTab === "profile"} onClick={() => setActiveTab("profile")}>
-                    <User size={18} />
-                    <div style={{ fontSize: 12 }}>Профиль</div>
-                </NavItem>
-            </BottomNav>
         </Page>
     );
 };

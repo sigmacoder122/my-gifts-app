@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import ProfilePage from "./ProfilePage";
 import MarketPage from "./MarketPage";
 import PortfolioPage from "./PortfolioPage";
-import GiftsStatsPage from "./GiftsStatsPage"; // Статистика подарков
+import GiftsStatsPage from "./GiftsStatsPage";
+import { Gift, gifts } from "./data/gifts"; // если нужны иконки для маркет
+
+import { Home, PieChart, ShoppingBag, User } from "lucide-react";
 
 type Page = "profile" | "market" | "portfolio" | "gifts-stats";
 
@@ -24,83 +27,90 @@ const App: React.FC = () => {
         }
     };
 
-    const pages: { key: Page; label: string }[] = [
-        { key: "market", label: "Маркет" },
-        { key: "portfolio", label: "Мой портфель" },
-        { key: "gifts-stats", label: "Статистика подарков" },
-        { key: "profile", label: "Профиль" },
+    const pages: { key: Page; label: string; icon: React.ReactNode }[] = [
+        { key: "market", label: "Маркет", icon: <ShoppingBag size={24} /> },
+        { key: "portfolio", label: "Портфель", icon: <Home size={24} /> },
+        { key: "gifts-stats", label: "Статистика", icon: <PieChart size={24} /> },
+        { key: "profile", label: "Профиль", icon: <User size={24} /> },
     ];
 
     return (
         <div style={{ paddingBottom: "80px" }}>
             {renderPage()}
+
+            {/* Нижняя навигация */}
             <nav style={bottomNavStyle}>
                 {pages.map((p) => (
                     <NavButton
                         key={p.key}
                         active={currentPage === p.key}
                         onClick={() => setCurrentPage(p.key)}
-                    >
-                        {p.label}
-                    </NavButton>
+                        icon={p.icon}
+                        label={p.label}
+                    />
                 ))}
             </nav>
         </div>
     );
 };
 
-// --- Стили навигации ---
+// --- Стили нижней панели ---
 const bottomNavStyle: React.CSSProperties = {
     position: "fixed",
     bottom: 0,
     left: 0,
     width: "100%",
+    height: 70,
     display: "flex",
     justifyContent: "space-around",
-    padding: "12px 0",
-    background: "linear-gradient(90deg, #1e1e1e, #2c2c2c)",
-    borderTop: "2px solid #00aaff",
+    alignItems: "center",
+    background: "#121212",
+    borderTop: "1px solid #333",
     zIndex: 100,
 };
 
+// --- Кнопка с иконкой и подписью ---
 interface NavButtonProps {
     active: boolean;
     onClick: () => void;
-    children: React.ReactNode;
+    icon: React.ReactNode;
+    label: string;
 }
 
-// Кнопка навигации
-const NavButton: React.FC<NavButtonProps> = ({ active, children, onClick }) => {
+const NavButton: React.FC<NavButtonProps> = ({ active, icon, label, onClick }) => {
     return (
         <button
             onClick={onClick}
             style={{
-                flex: 1,
-                margin: "0 6px",
-                padding: "10px 0",
-                borderRadius: 18,
-                border: active ? "2px solid #00aaff" : "2px solid #555",
-                background: active ? "#00aaff" : "#1e1e1e",
-                color: active ? "#121212" : "#fff",
-                fontWeight: 600,
-                fontSize: 14,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "transparent",
+                border: "none",
+                color: active ? "#00aaff" : "#888",
                 cursor: "pointer",
-                transition: "all 0.25s ease",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-            }}
-            onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "#005f99";
-                (e.currentTarget as HTMLButtonElement).style.color = "#fff";
-            }}
-            onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = active
-                    ? "#00aaff"
-                    : "#1e1e1e";
-                (e.currentTarget as HTMLButtonElement).style.color = active ? "#121212" : "#fff";
+                fontSize: 12,
+                fontWeight: 600,
+                gap: 4,
+                transition: "color 0.2s ease",
             }}
         >
-            {children}
+            <div
+                style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: active ? "rgba(0,170,255,0.15)" : "transparent",
+                    transition: "background 0.2s ease",
+                }}
+            >
+                {icon}
+            </div>
+            <span>{label}</span>
         </button>
     );
 };
