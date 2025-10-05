@@ -79,10 +79,21 @@ const Balance = styled.div`
 const FilterRow = styled.div`
   display: flex;
   gap: 8px;
-  overflow-x: hidden;
+  overflow-x: auto;
   padding-bottom: 8px;
   margin-bottom: 16px;
+
+  /* Убираем скроллбар */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  /* Плавная прокрутка */
+  scroll-behavior: smooth;
 `;
+
 
 const FilterButton = styled.button<{ active?: boolean }>`
   background: ${({ active }) => (active ? "#00c2ff" : "#1c1c1e")};
