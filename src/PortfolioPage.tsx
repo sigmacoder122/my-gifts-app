@@ -1,19 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import styled, { keyframes } from "styled-components";
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    Tooltip,
-    ResponsiveContainer,
-    CartesianGrid,
-} from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { gifts, tonLogo } from "./data/gifts";
 
-/* ====== Интерфейсы ====== */
-export interface Gift {
+interface Gift {
     id: number;
     name: string;
     price: number;
@@ -29,13 +20,11 @@ interface TelegramUser {
     photo_url?: string;
 }
 
-/* ====== Анимации ====== */
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-/* ====== Стили ====== */
 const PageContainer = styled.div`
     display: flex;
     flex-direction: column;
@@ -67,7 +56,6 @@ const Avatar = styled.img`
 const Username = styled.h2`
     font-size: 1.4rem;
     font-weight: 600;
-    color: white;
 `;
 
 const StatsContainer = styled.div`
@@ -148,6 +136,8 @@ const GiftName = styled.div`
 const GiftPrice = styled.div`
     flex: 1;
     text-align: right;
+    color: #4ea3ff;
+    font-weight: 600;
 `;
 
 const GiftGrowth = styled.div<{ positive: boolean }>`
@@ -156,6 +146,7 @@ const GiftGrowth = styled.div<{ positive: boolean }>`
     justify-content: flex-end;
     align-items: center;
     color: ${(p) => (p.positive ? "#4EFFA1" : "#FF4E4E")};
+    font-weight: 600;
 `;
 
 const TonLogo = styled.img`
@@ -165,8 +156,8 @@ const TonLogo = styled.img`
     margin-left: 5px;
 `;
 
-const SortButton = styled.button`
-    background: rgba(255, 255, 255, 0.08);
+const SortButton = styled.button<{ active?: boolean }>`
+    background: ${(p) => (p.active ? "#00c2ff" : "rgba(255,255,255,0.08)")};
     color: white;
     border: none;
     padding: 8px 12px;
@@ -179,7 +170,6 @@ const SortButton = styled.button`
     }
 `;
 
-/* ====== Компонент ====== */
 const PortfolioPage: React.FC = () => {
     const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
     const [portfolio, setPortfolio] = useState<Gift[]>([]);
@@ -188,30 +178,18 @@ const PortfolioPage: React.FC = () => {
         direction: "desc",
     });
 
-    /* ====== Telegram данные или заглушка ====== */
     useEffect(() => {
-        try {
-            const tg = (window as any).Telegram?.WebApp;
-            if (tg && tg.initDataUnsafe?.user) {
-                setTelegramUser(tg.initDataUnsafe.user);
-            } else {
-                setTelegramUser({
-                    first_name: "Иван",
-                    username: "ivan_dev",
-                    photo_url:
-                        "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png",
-                });
-            }
-        } catch {
+        const tg = (window as any).Telegram?.WebApp;
+        if (tg?.initDataUnsafe?.user) {
+            setTelegramUser(tg.initDataUnsafe.user);
+        } else {
             setTelegramUser({
                 first_name: "Иван",
                 username: "ivan_dev",
-                photo_url:
-                    "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png",
+                photo_url: "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png",
             });
         }
 
-        // Пример инвестированных подарков
         const demoPortfolio = gifts.map((g) => ({
             ...g,
             invested: Math.floor(Math.random() * 5000) + 1000,
@@ -219,28 +197,27 @@ const PortfolioPage: React.FC = () => {
         setPortfolio(demoPortfolio);
     }, []);
 
-    /* ====== Сортировка ====== */
+    const sortedPortfolio = useMemo(() => {
+        const sorted = [...portfolio];
+        sorted.sort((a, b) => {
+            const aVal = a[sortConfig.key] ?? 0;
+            const bVal = b[sortConfig.key] ?? 0;
+            if (aVal < bVal) return sortConfig.direction === "asc" ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
+            return 0;
+        });
+        return sorted;
+    }, [portfolio, sortConfig]);
+
     const requestSort = (key: keyof Gift) => {
         let direction: "asc" | "desc" = "asc";
         if (sortConfig.key === key && sortConfig.direction === "asc") {
             direction = "desc";
         }
         setSortConfig({ key, direction });
-
-        const sorted = [...portfolio].sort((a, b) => {
-            const aVal = a[key] ?? 0;
-            const bVal = b[key] ?? 0;
-            if (aVal < bVal) return direction === "asc" ? -1 : 1;
-            if (aVal > bVal) return direction === "asc" ? 1 : -1;
-            return 0;
-        });
-
-        setPortfolio(sorted);
     };
 
-    /* ====== Данные для графика ====== */
     const totalInvested = portfolio.reduce((acc, g) => acc + (g.invested ?? 0), 0);
-
     const chartData = [
         { day: "Пн", value: totalInvested * 0.95 },
         { day: "Вт", value: totalInvested * 1.05 },
@@ -262,8 +239,7 @@ const PortfolioPage: React.FC = () => {
                 <StatBlock>
                     <StatLabel>Всего инвестировано</StatLabel>
                     <StatValue>
-                        {totalInvested.toLocaleString()} TON
-                        <TonLogo src={tonLogo} alt="TON" />
+                        {totalInvested.toLocaleString()} <TonLogo src={tonLogo} alt="TON" />
                     </StatValue>
                 </StatBlock>
                 <StatBlock>
@@ -282,25 +258,16 @@ const PortfolioPage: React.FC = () => {
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                         <XAxis dataKey="day" stroke="#888" />
                         <YAxis stroke="#888" />
-                        <Tooltip
-                            contentStyle={{ backgroundColor: "#1b1c20", border: "none", color: "#fff" }}
-                            labelStyle={{ color: "#aaa" }}
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke="#4ea3ff"
-                            strokeWidth={3}
-                            dot={false}
-                        />
+                        <Tooltip contentStyle={{ backgroundColor: "#1b1c20", border: "none", color: "#fff" }} labelStyle={{ color: "#aaa" }} />
+                        <Line type="monotone" dataKey="value" stroke="#4ea3ff" strokeWidth={3} dot={false} />
                     </LineChart>
                 </ResponsiveContainer>
             </ChartContainer>
 
-            <div style={{ marginTop: "15px", display: "flex", justifyContent: "center" }}>
-                <SortButton onClick={() => requestSort("name")}>Сортировать по названию</SortButton>
-                <SortButton onClick={() => requestSort("growth")}>По росту</SortButton>
-                <SortButton onClick={() => requestSort("invested")}>По инвестициям</SortButton>
+            <div style={{ marginTop: "15px", display: "flex", justifyContent: "center", flexWrap: "wrap" }}>
+                <SortButton active={sortConfig.key === "name"} onClick={() => requestSort("name")}>Сортировать по названию</SortButton>
+                <SortButton active={sortConfig.key === "growth"} onClick={() => requestSort("growth")}>По росту</SortButton>
+                <SortButton active={sortConfig.key === "invested"} onClick={() => requestSort("invested")}>По инвестициям</SortButton>
             </div>
 
             <TableContainer>
@@ -310,7 +277,7 @@ const PortfolioPage: React.FC = () => {
                     <div style={{ flex: 1, textAlign: "right" }}>Рост</div>
                 </TableHeader>
 
-                {portfolio.map((gift) => (
+                {sortedPortfolio.map((gift) => (
                     <TableRow key={gift.id}>
                         <div style={{ display: "flex", alignItems: "center", flex: 2 }}>
                             <GiftImage src={gift.img} alt={gift.name} />

@@ -8,12 +8,18 @@ import {
     Tooltip as RechartsTooltip,
     ResponsiveContainer,
 } from "recharts";
-import { gifts } from "./data/gifts"; // подарки 🎁
+import { gifts } from "./data/gifts";
 
 // --- Анимации ---
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+`;
+
+const hoverLift = keyframes`
+  0% { transform: translateY(0); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); }
+  50% { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0, 170, 255, 0.3); }
+  100% { transform: translateY(0); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); }
 `;
 
 // --- Стили ---
@@ -58,20 +64,25 @@ const FilterButton = styled.button<{ active: boolean }>`
 const GiftRow = styled.div`
   display: flex;
   align-items: center;
-  background: #1e1e1e;
-  border-radius: 14px;
-  padding: 14px;
+  background: linear-gradient(135deg, #1e1e1e, #242424);
+  border-radius: 16px;
+  padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   animation: ${fadeIn} 0.5s ease;
+  transition: transform 0.3s, box-shadow 0.3s;
+  &:hover {
+    animation: ${hoverLift} 1.5s infinite;
+  }
 `;
 
 const GiftIcon = styled.img`
-  width: 60px;
-  height: 60px;
-  object-fit: contain; // сохраняем пропорции
-  border-radius: 10px;
-  margin-right: 14px;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-right: 16px;
+  border: 2px solid rgba(0,170,255,0.3);
 `;
 
 const GiftName = styled.div`
@@ -79,11 +90,13 @@ const GiftName = styled.div`
   font-weight: bold;
   color: #fff;
   flex: 0.8;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 `;
 
 const ChartBox = styled.div`
   flex: 2;
   height: 100px;
+  margin: 0 12px;
 `;
 
 const Growth = styled.div<{ positive: boolean }>`
@@ -91,9 +104,10 @@ const Growth = styled.div<{ positive: boolean }>`
   font-weight: bold;
   margin-left: 10px;
   color: ${(props) => (props.positive ? "#00ff66" : "#ff4444")};
+  min-width: 60px;
+  text-align: right;
 `;
 
-// --- Кастомный тултип ---
 const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         return (
@@ -104,6 +118,7 @@ const CustomTooltip = ({ active, payload }: any) => {
                     borderRadius: "6px",
                     border: "1px solid #00aaff",
                     fontSize: "12px",
+                    color: "#fff",
                 }}
             >
                 {payload[0].value.toFixed(2)} TON
@@ -113,7 +128,6 @@ const CustomTooltip = ({ active, payload }: any) => {
     return null;
 };
 
-// --- Компонент ---
 const GiftsStatsPage: React.FC = () => {
     const [filter, setFilter] = useState<"all" | "up" | "down">("all");
 
@@ -125,9 +139,8 @@ const GiftsStatsPage: React.FC = () => {
 
     return (
         <Container>
-            <Title>📊 Статистика подарков</Title>
+            <Title>📈 Динамика и рост подарков</Title>
 
-            {/* --- Фильтр --- */}
             <FilterRow>
                 <FilterButton active={filter === "all"} onClick={() => setFilter("all")}>
                     Все
@@ -140,7 +153,6 @@ const GiftsStatsPage: React.FC = () => {
                 </FilterButton>
             </FilterRow>
 
-            {/* --- Список подарков --- */}
             {filteredGifts.map((gift) => {
                 const chartData = [
                     { day: "Пн", value: gift.price * 0.95 },
@@ -150,6 +162,9 @@ const GiftsStatsPage: React.FC = () => {
                     { day: "Пт", value: gift.price * (1 + gift.growth / 100 + 0.03) },
                 ];
 
+                const gradientId = `gradient-${gift.id}`;
+                const strokeColor = gift.growth >= 0 ? "#00ff66" : "#ff4444";
+
                 return (
                     <GiftRow key={gift.id}>
                         <GiftIcon src={gift.img} alt={gift.name} />
@@ -157,15 +172,23 @@ const GiftsStatsPage: React.FC = () => {
                         <ChartBox>
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor={strokeColor} stopOpacity={0.8}/>
+                                            <stop offset="100%" stopColor={strokeColor} stopOpacity={0.2}/>
+                                        </linearGradient>
+                                    </defs>
                                     <XAxis dataKey="day" stroke="#444" fontSize={10} />
                                     <YAxis stroke="#444" fontSize={10} />
                                     <RechartsTooltip content={<CustomTooltip />} />
                                     <Line
                                         type="monotone"
                                         dataKey="value"
-                                        stroke="#00aaff"
+                                        stroke={`url(#${gradientId})`}
                                         strokeWidth={3}
                                         dot={false}
+                                        animationDuration={1000}
+                                        animationEasing="ease-in-out"
                                     />
                                 </LineChart>
                             </ResponsiveContainer>

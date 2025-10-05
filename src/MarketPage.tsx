@@ -183,7 +183,7 @@ const Overlay = styled.div`
   padding: 20px;
 `;
 
-const Modal = styled.div<{ isKeyboardOpen?: boolean }>`
+const Modal = styled.div<{ offset?: number }>`
   background: #111;
   border-radius: 20px 20px 10px 10px;
   width: 100%;
@@ -193,8 +193,10 @@ const Modal = styled.div<{ isKeyboardOpen?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-height: ${({ isKeyboardOpen }) => (isKeyboardOpen ? "60vh" : "85vh")};
+  max-height: 85vh;
   overflow-y: auto;
+  transform: translateY(${({ offset }) => offset}px);
+  transition: transform 0.25s ease;
 `;
 
 const ModalImage = styled.img`
@@ -239,7 +241,7 @@ const ModalButton = styled.button<{ primary?: boolean }>`
   color: #fff;
   border: none;
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 14px 14px;
   font-weight: 600;
   cursor: pointer;
   transition: 0.25s;
@@ -271,7 +273,7 @@ export default function MarketPage() {
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
     const [selectedGift, setSelectedGift] = useState<any>(null);
     const [investment, setInvestment] = useState<number | "">("");
-    const [keyboardOpen, setKeyboardOpen] = useState(false);
+    const [modalOffset, setModalOffset] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const sortedGifts = useMemo(() => {
@@ -296,12 +298,30 @@ export default function MarketPage() {
         );
         setSelectedGift(null);
         setInvestment("");
+        setModalOffset(0);
     };
+
+    // Отслеживаем клавиатуру на мобильных
+    useEffect(() => {
+        const handler = () => {
+            if (inputRef.current && window.visualViewport) {
+                const viewportHeight = window.visualViewport.height;
+                const elementBottom =
+                    inputRef.current.getBoundingClientRect().bottom;
+                const diff = elementBottom - viewportHeight + 20; // 20px margin
+                setModalOffset(diff > 0 ? -diff : 0);
+            }
+        };
+        window.visualViewport?.addEventListener("resize", handler);
+        return () =>
+            window.visualViewport?.removeEventListener("resize", handler);
+    }, []);
 
     useEffect(() => {
         if (selectedGift && inputRef.current) {
             inputRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-            inputRef.current.focus();
+        } else {
+            setModalOffset(0);
         }
     }, [selectedGift]);
 
@@ -363,7 +383,7 @@ export default function MarketPage() {
             {selectedGift && (
                 <Overlay onClick={() => setSelectedGift(null)}>
                     <Modal
-                        isKeyboardOpen={keyboardOpen}
+                        offset={modalOffset}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <h2 style={{ textAlign: "center", margin: 0 }}>{selectedGift.name}</h2>
@@ -402,8 +422,6 @@ export default function MarketPage() {
                             onChange={(e) =>
                                 setInvestment(e.target.value === "" ? "" : Number(e.target.value))
                             }
-                            onFocus={() => setKeyboardOpen(true)}
-                            onBlur={() => setKeyboardOpen(false)}
                         />
 
                         <ResultText>
