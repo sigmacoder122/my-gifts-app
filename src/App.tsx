@@ -4,7 +4,7 @@ import MarketPage from "./MarketPage";
 import PortfolioPage from "./PortfolioPage";
 import GiftsStatsPage from "./GiftsStatsPage";
 import LoadingScreen from "./LoadingScreen"; // Лоадинг экран
-
+import { TonConnectUIProvider } from "@tonconnect/ui-react";
 import { Home, PieChart, ShoppingBag, User } from "lucide-react";
 
 type Page = "profile" | "market" | "portfolio" | "gifts-stats";
@@ -40,22 +40,24 @@ const App: React.FC = () => {
     }
 
     return (
-        <div style={{ paddingBottom: 80 }}>
-            {renderPage()}
+        <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json">
+            <div style={{ paddingBottom: 80 }}>
+                {renderPage()}
 
-            {/* Нижняя навигация */}
-            <nav style={bottomNavStyle}>
-                {pages.map((p) => (
-                    <NavButton
-                        key={p.key}
-                        active={currentPage === p.key}
-                        onClick={() => setCurrentPage(p.key)}
-                        icon={p.icon}
-                        label={p.label}
-                    />
-                ))}
-            </nav>
-        </div>
+                {/* Нижняя навигация */}
+                <nav style={bottomNavStyle}>
+                    {pages.map((p) => (
+                        <NavButton
+                            key={p.key}
+                            active={currentPage === p.key}
+                            onClick={() => setCurrentPage(p.key)}
+                            icon={p.icon}
+                            label={p.label}
+                        />
+                    ))}
+                </nav>
+            </div>
+        </TonConnectUIProvider>
     );
 };
 

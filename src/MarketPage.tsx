@@ -18,6 +18,7 @@ import {
     Tooltip as RechartsTooltip,
 } from "recharts";
 import { gifts, tonLogo } from "./data/gifts";
+import { useTonConnectUI, useTonWallet } from "@tonconnect/ui-react";
 
 /* ==============================
    🎨 АНИМАЦИИ
@@ -35,9 +36,14 @@ const slideUp = keyframes`
   from { opacity: 0; transform: translateY(30px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 `;
+const glow = keyframes`
+  0% { box-shadow: 0 0 6px #00c2ff; }
+  50% { box-shadow: 0 0 20px #00c2ff; }
+  100% { box-shadow: 0 0 6px #00c2ff; }
+`;
 
 /* ==============================
-   📱 ОСНОВНОЙ КОНТЕЙНЕР
+   📱 СТИЛИ
 ============================== */
 const Page = styled.div`
   background: #0e0f11;
@@ -53,21 +59,16 @@ const Page = styled.div`
   animation: ${fadeIn} 0.5s ease;
 `;
 
-/* ==============================
-   🔝 ХЕДЕР
-============================== */
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 14px;
 `;
-
 const Title = styled.h1`
   font-size: 20px;
   font-weight: 700;
 `;
-
 const Balance = styled.div`
   display: flex;
   align-items: center;
@@ -82,33 +83,6 @@ const Balance = styled.div`
     height: 18px;
   }
 `;
-
-/* ==============================
-   💳 КНОПКА ПОДКЛЮЧЕНИЯ WALLET
-============================== */
-const ConnectWalletButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(90deg, #007aff, #00c2ff);
-  color: #fff;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  box-shadow: 0 0 12px rgba(0, 194, 255, 0.3);
-  transition: all 0.3s ease;
-  &:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 20px rgba(0, 194, 255, 0.5);
-  }
-`;
-
-/* ==============================
-   🔍 ФИЛЬТРЫ
-============================== */
 const FilterRow = styled.div`
   display: flex;
   gap: 8px;
@@ -122,7 +96,6 @@ const FilterRow = styled.div`
   }
   scroll-behavior: smooth;
 `;
-
 const FilterButton = styled.button<{ active?: boolean }>`
   background: ${({ active }) => (active ? "#00c2ff" : "#1c1c1e")};
   color: #fff;
@@ -137,10 +110,6 @@ const FilterButton = styled.button<{ active?: boolean }>`
     opacity: 0.9;
   }
 `;
-
-/* ==============================
-   🎁 КАРТОЧКИ ПОДАРКОВ
-============================== */
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -150,7 +119,6 @@ const Grid = styled.div`
     grid-template-columns: repeat(2, 1fr);
   }
 `;
-
 const Card = styled.div`
   background: #141416;
   border-radius: 16px;
@@ -165,7 +133,6 @@ const Card = styled.div`
     animation: ${hoverGlow} 1.8s infinite;
   }
 `;
-
 const GiftImage = styled.img`
   width: 100%;
   height: auto;
@@ -177,14 +144,12 @@ const GiftImage = styled.img`
     rgba(255, 255, 255, 0.02)
   );
 `;
-
 const GiftName = styled.div`
   font-weight: 600;
   font-size: 15px;
   margin-bottom: 4px;
   text-align: center;
 `;
-
 const Price = styled.div`
   font-weight: 600;
   font-size: 14px;
@@ -194,13 +159,11 @@ const Price = styled.div`
   align-items: center;
   gap: 4px;
 `;
-
 const InfoRow = styled.div`
   display: flex;
   justify-content: space-between;
   width: 100%;
 `;
-
 const Growth = styled.div<{ positive?: boolean }>`
   color: ${({ positive }) => (positive ? "#00ff99" : "#ff5555")};
   font-weight: 600;
@@ -209,10 +172,6 @@ const Growth = styled.div<{ positive?: boolean }>`
   align-items: center;
   gap: 2px;
 `;
-
-/* ==============================
-   🪟 МОДАЛЬНОЕ ОКНО
-============================== */
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
@@ -225,7 +184,6 @@ const Overlay = styled.div`
   overflow-y: auto;
   padding: 20px;
 `;
-
 const Modal = styled.div<{ offset?: number }>`
   background: #111;
   border-radius: 20px 20px 10px 10px;
@@ -241,13 +199,11 @@ const Modal = styled.div<{ offset?: number }>`
   transform: translateY(${({ offset }) => offset}px);
   transition: transform 0.25s ease;
 `;
-
 const ModalImage = styled.img`
   width: 80%;
   border-radius: 12px;
   margin: 12px 0;
 `;
-
 const ModalInput = styled.input`
   width: 100%;
   background: #1a1a1c;
@@ -263,21 +219,18 @@ const ModalInput = styled.input`
     border-color: #00c2ff;
   }
 `;
-
 const ResultText = styled.div`
   font-size: 15px;
   margin-bottom: 12px;
   color: #a0a0a0;
   text-align: center;
 `;
-
 const ModalButtons = styled.div`
   display: flex;
   gap: 10px;
   width: 100%;
   margin-top: 20px;
 `;
-
 const ModalButton = styled.button<{ primary?: boolean }>`
   flex: 1;
   background: ${({ primary }) => (primary ? "#00c2ff" : "#1c1c1e")};
@@ -292,33 +245,97 @@ const ModalButton = styled.button<{ primary?: boolean }>`
     opacity: 0.9;
   }
 `;
-
 const ChartWrap = styled.div`
   width: 100%;
   height: 140px;
   margin-bottom: 10px;
 `;
+const TonWalletButtonStyled = styled.button`
+  background: linear-gradient(90deg, #00aaff, #0077ff);
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  animation: ${glow} 2.5s infinite ease-in-out;
+  transition: transform 0.3s;
+  &:hover {
+    transform: scale(1.05);
+  }
+`;
+const WalletInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 170, 255, 0.08);
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  img {
+    width: 18px;
+    height: 18px;
+  }
+`;
 
 /* ==============================
-   📈 ФУНКЦИЯ ПОСТРОЕНИЯ ГРАФИКА
+   📈 ГРАФИК
 ============================== */
-const getChart = (price: number) => {
-    return [
-        { day: "Пн", value: Math.round(price * 0.95) },
-        { day: "Вт", value: Math.round(price * 0.98) },
-        { day: "Ср", value: Math.round(price * 1.02) },
-        { day: "Чт", value: Math.round(price * 1.05) },
-        { day: "Пт", value: Math.round(price * 1.07) },
-        { day: "Сб", value: Math.round(price * 1.12) },
-        { day: "Вс", value: Math.round(price * 1.15) },
-    ];
+const getChart = (price: number) => [
+    { day: "Пн", value: Math.round(price * 0.95) },
+    { day: "Вт", value: Math.round(price * 0.98) },
+    { day: "Ср", value: Math.round(price * 1.02) },
+    { day: "Чт", value: Math.round(price * 1.05) },
+    { day: "Пт", value: Math.round(price * 1.07) },
+    { day: "Сб", value: Math.round(price * 1.12) },
+    { day: "Вс", value: Math.round(price * 1.15) },
+];
+
+/* ==============================
+   💳 TON WALLET BUTTON
+============================== */
+const TonWalletButton: React.FC<{ onConnected?: (addr: string) => void }> = ({
+                                                                                 onConnected,
+                                                                             }) => {
+    const wallet = useTonWallet();
+    const [tonConnectUI] = useTonConnectUI();
+    const [balance, setBalance] = useState<number>(0);
+
+    useEffect(() => {
+        if (wallet) {
+            setBalance(1234); // Здесь можно интегрировать реальный запрос баланса
+            onConnected?.(wallet.account.address);
+        }
+    }, [wallet, onConnected]);
+
+    if (!wallet) {
+        return (
+            <TonWalletButtonStyled onClick={() => tonConnectUI.connectWallet()}>
+                <Wallet size={18} /> Подключить кошелёк
+            </TonWalletButtonStyled>
+        );
+    }
+
+    return (
+        <WalletInfo>
+            <img src={tonLogo} alt="TON" />
+            {wallet.account.address.slice(0, 6)}...
+            {wallet.account.address.slice(-6)} ({balance} TON)
+        </WalletInfo>
+    );
 };
 
 /* ==============================
-   ⚙️ КОМПОНЕНТ MARKET PAGE
+   ⚙️ MARKET PAGE
 ============================== */
 export default function MarketPage() {
     const [walletConnected, setWalletConnected] = useState(false);
+    const [walletAddress, setWalletAddress] = useState("");
     const [sortField, setSortField] = useState<"price" | "growth">("price");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
     const [selectedGift, setSelectedGift] = useState<any>(null);
@@ -351,7 +368,6 @@ export default function MarketPage() {
         setModalOffset(0);
     };
 
-    // Обработка адаптации под клавиатуру
     useEffect(() => {
         const handler = () => {
             if (inputRef.current && window.visualViewport) {
@@ -362,7 +378,8 @@ export default function MarketPage() {
             }
         };
         window.visualViewport?.addEventListener("resize", handler);
-        return () => window.visualViewport?.removeEventListener("resize", handler);
+        return () =>
+            window.visualViewport?.removeEventListener("resize", handler);
     }, []);
 
     useEffect(() => {
@@ -377,16 +394,12 @@ export default function MarketPage() {
         <Page>
             <Header>
                 <Title>Магазин подарков</Title>
-                {walletConnected ? (
-                    <Balance>
-                        <img src={tonLogo} alt="TON" />
-                        12,540 TON
-                    </Balance>
-                ) : (
-                    <ConnectWalletButton onClick={() => setWalletConnected(true)}>
-                        <Wallet size={16} /> Connect Wallet
-                    </ConnectWalletButton>
-                )}
+                <TonWalletButton
+                    onConnected={(address) => {
+                        setWalletConnected(true);
+                        setWalletAddress(address);
+                    }}
+                />
             </Header>
 
             <FilterRow>

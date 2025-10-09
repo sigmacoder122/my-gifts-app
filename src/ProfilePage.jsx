@@ -1,18 +1,19 @@
-// src/ProfilePage.tsx
-import React from "react";
-import styled, { keyframes } from "styled-components";
-import { ArrowRight } from "lucide-react";
+// src/ProfilePage.jsx
+import React, { useState, useEffect } from "react";
+import styled, { keyframes, css } from "styled-components";
+import { ArrowRight, Wallet, Plus, Minus } from "lucide-react";
+import { useTonConnectUI, useTonWallet } from "@tonconnect/ui-react";
 
 /* ===== Анимации ===== */
-const glowAnim = keyframes`
-  0% { box-shadow: 0 0 5px #00aaff; }
-  50% { box-shadow: 0 0 15px #00aaff; }
-  100% { box-shadow: 0 0 5px #00aaff; }
-`;
-
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+`;
+
+const glow = keyframes`
+  0% { box-shadow: 0 0 6px #00c2ff; }
+  50% { box-shadow: 0 0 20px #00c2ff; }
+  100% { box-shadow: 0 0 6px #00c2ff; }
 `;
 
 /* ===== Стили ===== */
@@ -199,19 +200,78 @@ const InviteButton = styled.button`
   }
 `;
 
+/* ===== Wallet Button ===== */
+const TonWalletButtonStyled = styled.button`
+  background: linear-gradient(90deg, #00aaff, #0077ff);
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  animation: ${css`${glow} 2.5s infinite ease-in-out`};
+  transition: transform 0.3s;
+  &:hover {
+    transform: scale(1.05);
+  }
+`;
+
+const WalletInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 10px 16px;
+`;
+
 /* ===== Заглушки ===== */
 const mockAvatar = "https://cdn-icons-png.flaticon.com/512/3177/3177440.png";
 const tonLogo = "https://ton.org/download/ton_symbol.png";
 
-/* ===== Компонент ===== */
-const ProfilePage: React.FC = () => {
+/* ===== Компонент Wallet ===== */
+const WalletControlButton = () => {
+    const wallet = useTonWallet();
+    const [tonConnectUI] = useTonConnectUI();
+    const [balance, setBalance] = useState(0);
+
+    const handleConnect = () => tonConnectUI.connectWallet();
+    const increment = () => setBalance(prev => prev + 100);
+    const decrement = () => setBalance(prev => (prev - 100 >= 0 ? prev - 100 : 0));
+
+    if (!wallet) {
+        return (
+            <TonWalletButtonStyled onClick={handleConnect}>
+                <Wallet size={18} /> Подключить кошелёк
+            </TonWalletButtonStyled>
+        );
+    }
+
+    return (
+        <WalletInfo>
+            <img src={tonLogo} alt="TON" />
+            {wallet.account.address.slice(0, 6)}...{wallet.account.address.slice(-6)}
+            ({balance} TON)
+            <button onClick={decrement}><Minus size={12} /></button>
+            <button onClick={increment}><Plus size={12} /></button>
+        </WalletInfo>
+    );
+};
+
+/* ===== Компонент ProfilePage ===== */
+const ProfilePage = () => {
     return (
         <Page>
             <TopRow>
                 <TonBalance>
                     <TonIcon src={tonLogo} alt="TON" />
-                    <div>12 345 TON</div>
+                    12 345 TON
                 </TonBalance>
+                <WalletControlButton />
             </TopRow>
 
             <CenterProfile>
