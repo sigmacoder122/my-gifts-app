@@ -6,6 +6,7 @@ import {
     Gift as GiftIcon,
     Check,
     X,
+    Wallet,
 } from "lucide-react";
 import {
     ResponsiveContainer,
@@ -16,10 +17,11 @@ import {
     YAxis,
     Tooltip as RechartsTooltip,
 } from "recharts";
-import { gifts } from "./data/gifts";
-import { tonLogo } from "./data/gifts";
+import { gifts, tonLogo } from "./data/gifts";
 
-/* === АНИМАЦИИ === */
+/* ==============================
+   🎨 АНИМАЦИИ
+============================== */
 const fadeIn = keyframes`
   from { opacity: 0; transform: scale(0.97); }
   to { opacity: 1; transform: scale(1); }
@@ -34,7 +36,9 @@ const slideUp = keyframes`
   to { opacity: 1; transform: translateY(0) scale(1); }
 `;
 
-/* === СТРАНИЦА === */
+/* ==============================
+   📱 ОСНОВНОЙ КОНТЕЙНЕР
+============================== */
 const Page = styled.div`
   background: #0e0f11;
   color: #fff;
@@ -46,13 +50,17 @@ const Page = styled.div`
   overflow-x: hidden;
   overflow-y: auto;
   touch-action: pan-y;
+  animation: ${fadeIn} 0.5s ease;
 `;
 
+/* ==============================
+   🔝 ХЕДЕР
+============================== */
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 `;
 
 const Title = styled.h1`
@@ -75,25 +83,45 @@ const Balance = styled.div`
   }
 `;
 
-/* === ФИЛЬТРЫ === */
+/* ==============================
+   💳 КНОПКА ПОДКЛЮЧЕНИЯ WALLET
+============================== */
+const ConnectWalletButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, #007aff, #00c2ff);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 0 12px rgba(0, 194, 255, 0.3);
+  transition: all 0.3s ease;
+  &:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 20px rgba(0, 194, 255, 0.5);
+  }
+`;
+
+/* ==============================
+   🔍 ФИЛЬТРЫ
+============================== */
 const FilterRow = styled.div`
   display: flex;
   gap: 8px;
   overflow-x: auto;
   padding-bottom: 8px;
   margin-bottom: 16px;
-
-  /* Убираем скроллбар */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   &::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
   }
-
-  /* Плавная прокрутка */
   scroll-behavior: smooth;
 `;
-
 
 const FilterButton = styled.button<{ active?: boolean }>`
   background: ${({ active }) => (active ? "#00c2ff" : "#1c1c1e")};
@@ -110,7 +138,9 @@ const FilterButton = styled.button<{ active?: boolean }>`
   }
 `;
 
-/* === КАРТОЧКИ === */
+/* ==============================
+   🎁 КАРТОЧКИ ПОДАРКОВ
+============================== */
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -180,7 +210,9 @@ const Growth = styled.div<{ positive?: boolean }>`
   gap: 2px;
 `;
 
-/* === МОДАЛКА === */
+/* ==============================
+   🪟 МОДАЛЬНОЕ ОКНО
+============================== */
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
@@ -267,6 +299,9 @@ const ChartWrap = styled.div`
   margin-bottom: 10px;
 `;
 
+/* ==============================
+   📈 ФУНКЦИЯ ПОСТРОЕНИЯ ГРАФИКА
+============================== */
 const getChart = (price: number) => {
     return [
         { day: "Пн", value: Math.round(price * 0.95) },
@@ -279,7 +314,11 @@ const getChart = (price: number) => {
     ];
 };
 
+/* ==============================
+   ⚙️ КОМПОНЕНТ MARKET PAGE
+============================== */
 export default function MarketPage() {
+    const [walletConnected, setWalletConnected] = useState(false);
     const [sortField, setSortField] = useState<"price" | "growth">("price");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
     const [selectedGift, setSelectedGift] = useState<any>(null);
@@ -312,20 +351,18 @@ export default function MarketPage() {
         setModalOffset(0);
     };
 
-    // Отслеживаем клавиатуру на мобильных
+    // Обработка адаптации под клавиатуру
     useEffect(() => {
         const handler = () => {
             if (inputRef.current && window.visualViewport) {
                 const viewportHeight = window.visualViewport.height;
-                const elementBottom =
-                    inputRef.current.getBoundingClientRect().bottom;
-                const diff = elementBottom - viewportHeight + 20; // 20px margin
+                const elementBottom = inputRef.current.getBoundingClientRect().bottom;
+                const diff = elementBottom - viewportHeight + 20;
                 setModalOffset(diff > 0 ? -diff : 0);
             }
         };
         window.visualViewport?.addEventListener("resize", handler);
-        return () =>
-            window.visualViewport?.removeEventListener("resize", handler);
+        return () => window.visualViewport?.removeEventListener("resize", handler);
     }, []);
 
     useEffect(() => {
@@ -340,10 +377,16 @@ export default function MarketPage() {
         <Page>
             <Header>
                 <Title>Магазин подарков</Title>
-                <Balance>
-                    <img src={tonLogo} alt="TON" />
-                    0 TON
-                </Balance>
+                {walletConnected ? (
+                    <Balance>
+                        <img src={tonLogo} alt="TON" />
+                        12,540 TON
+                    </Balance>
+                ) : (
+                    <ConnectWalletButton onClick={() => setWalletConnected(true)}>
+                        <Wallet size={16} /> Connect Wallet
+                    </ConnectWalletButton>
+                )}
             </Header>
 
             <FilterRow>
@@ -393,10 +436,7 @@ export default function MarketPage() {
 
             {selectedGift && (
                 <Overlay onClick={() => setSelectedGift(null)}>
-                    <Modal
-                        offset={modalOffset}
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                    <Modal offset={modalOffset} onClick={(e) => e.stopPropagation()}>
                         <h2 style={{ textAlign: "center", margin: 0 }}>{selectedGift.name}</h2>
                         <ModalImage src={selectedGift.img} alt={selectedGift.name} />
 
