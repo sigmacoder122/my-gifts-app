@@ -1,5 +1,8 @@
 {
   "name": "My Gifts App",
   "description": "Demo app for TON Connect",
-  "icon": "icon.png"
+  "icon": "https://yourdomain.com/icon.png",
+  "version": "1.0.0",
+  "defaultWallets": ["tonkeeper", "mathwallet"],
+  "theme": "dark"
 }

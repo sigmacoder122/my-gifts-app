@@ -18,7 +18,12 @@ import {
     Tooltip as RechartsTooltip,
 } from "recharts";
 import { gifts, tonLogo } from "./data/gifts";
-import { useTonConnectUI, useTonWallet } from "@tonconnect/ui-react";
+import {
+    useTonConnectUI,
+    useTonWallet,
+    TonConnectUIProvider,
+    SendTransactionRequest,
+} from "@tonconnect/ui-react";
 
 /* ==============================
    🎨 АНИМАЦИИ
@@ -69,20 +74,7 @@ const Title = styled.h1`
   font-size: 20px;
   font-weight: 700;
 `;
-const Balance = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0, 170, 255, 0.08);
-  padding: 6px 10px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  img {
-    width: 18px;
-    height: 18px;
-  }
-`;
+
 const FilterRow = styled.div`
   display: flex;
   gap: 8px;
@@ -96,6 +88,7 @@ const FilterRow = styled.div`
   }
   scroll-behavior: smooth;
 `;
+
 const FilterButton = styled.button<{ active?: boolean }>`
   background: ${({ active }) => (active ? "#00c2ff" : "#1c1c1e")};
   color: #fff;
@@ -110,6 +103,7 @@ const FilterButton = styled.button<{ active?: boolean }>`
     opacity: 0.9;
   }
 `;
+
 const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -119,6 +113,7 @@ const Grid = styled.div`
     grid-template-columns: repeat(2, 1fr);
   }
 `;
+
 const Card = styled.div`
   background: #141416;
   border-radius: 16px;
@@ -133,6 +128,7 @@ const Card = styled.div`
     animation: ${hoverGlow} 1.8s infinite;
   }
 `;
+
 const GiftImage = styled.img`
   width: 100%;
   height: auto;
@@ -144,12 +140,14 @@ const GiftImage = styled.img`
     rgba(255, 255, 255, 0.02)
   );
 `;
+
 const GiftName = styled.div`
   font-weight: 600;
   font-size: 15px;
   margin-bottom: 4px;
   text-align: center;
 `;
+
 const Price = styled.div`
   font-weight: 600;
   font-size: 14px;
@@ -159,11 +157,13 @@ const Price = styled.div`
   align-items: center;
   gap: 4px;
 `;
+
 const InfoRow = styled.div`
   display: flex;
   justify-content: space-between;
   width: 100%;
 `;
+
 const Growth = styled.div<{ positive?: boolean }>`
   color: ${({ positive }) => (positive ? "#00ff99" : "#ff5555")};
   font-weight: 600;
@@ -172,6 +172,7 @@ const Growth = styled.div<{ positive?: boolean }>`
   align-items: center;
   gap: 2px;
 `;
+
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
@@ -184,26 +185,28 @@ const Overlay = styled.div`
   overflow-y: auto;
   padding: 20px;
 `;
+
 const Modal = styled.div<{ offset?: number }>`
   background: #111;
   border-radius: 20px 20px 10px 10px;
   width: 100%;
   max-width: 420px;
-  padding: 20px;
+  padding: 16px;
   animation: ${slideUp} 0.3s ease;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  max-height: 85vh;
+  max-height: calc(90vh - 80px);
   overflow-y: auto;
   transform: translateY(${({ offset }) => offset}px);
-  transition: transform 0.25s ease;
+  padding-bottom: 24px;
 `;
+
 const ModalImage = styled.img`
   width: 80%;
   border-radius: 12px;
   margin: 12px 0;
 `;
+
 const ModalInput = styled.input`
   width: 100%;
   background: #1a1a1c;
@@ -219,18 +222,21 @@ const ModalInput = styled.input`
     border-color: #00c2ff;
   }
 `;
+
 const ResultText = styled.div`
   font-size: 15px;
   margin-bottom: 12px;
   color: #a0a0a0;
   text-align: center;
 `;
+
 const ModalButtons = styled.div`
   display: flex;
   gap: 10px;
-  width: 100%;
-  margin-top: 20px;
+  margin-top: 12px;
+  margin-bottom: 12px;
 `;
+
 const ModalButton = styled.button<{ primary?: boolean }>`
   flex: 1;
   background: ${({ primary }) => (primary ? "#00c2ff" : "#1c1c1e")};
@@ -245,11 +251,13 @@ const ModalButton = styled.button<{ primary?: boolean }>`
     opacity: 0.9;
   }
 `;
+
 const ChartWrap = styled.div`
   width: 100%;
   height: 140px;
   margin-bottom: 10px;
 `;
+
 const TonWalletButtonStyled = styled.button`
   background: linear-gradient(90deg, #00aaff, #0077ff);
   color: #fff;
@@ -268,6 +276,7 @@ const TonWalletButtonStyled = styled.button`
     transform: scale(1.05);
   }
 `;
+
 const WalletInfo = styled.div`
   display: flex;
   align-items: center;
@@ -308,14 +317,14 @@ const TonWalletButton: React.FC<{ onConnected?: (addr: string) => void }> = ({
 
     useEffect(() => {
         if (wallet) {
-            setBalance(1234); // Здесь можно интегрировать реальный запрос баланса
+            setBalance(1234);
             onConnected?.(wallet.account.address);
         }
     }, [wallet, onConnected]);
 
     if (!wallet) {
         return (
-            <TonWalletButtonStyled onClick={() => tonConnectUI.connectWallet()}>
+            <TonWalletButtonStyled onClick={() => tonConnectUI.openModal()}>
                 <Wallet size={18} /> Подключить кошелёк
             </TonWalletButtonStyled>
         );
@@ -342,6 +351,8 @@ export default function MarketPage() {
     const [investment, setInvestment] = useState<number | "">("");
     const [modalOffset, setModalOffset] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [tonConnectUI] = useTonConnectUI();
+    const wallet = useTonWallet();
 
     const sortedGifts = useMemo(() => {
         const arr = [...gifts];
@@ -358,14 +369,30 @@ export default function MarketPage() {
             ? Math.round((selectedGift.growth / 100) * Number(investment))
             : 0;
 
-    const confirm = () => {
+    const confirm = async () => {
         if (!investment || Number(investment) <= 0) return;
-        alert(
-            `✅ Инвестировано ${investment} TON в ${selectedGift.name}. Прирост: ${calcGrowth} TON`
-        );
-        setSelectedGift(null);
-        setInvestment("");
-        setModalOffset(0);
+        if (!wallet) return alert("Подключите кошелек для оплаты");
+
+        const transaction: SendTransactionRequest = {
+            validUntil: Math.floor(Date.now() / 1000) + 600,
+            messages: [
+                {
+                    address: "UQBmbaxELasR_WS730I0l5Ps8h_KSaBR5kgE0w0oqsNEDgF6",
+                    amount: (Number(investment) * 1e9).toString(),
+                    payload: `Покупка ${selectedGift.name}`,
+                },
+            ],
+        };
+
+        try {
+            await tonConnectUI.sendTransaction(transaction);
+            alert(`✅ Оплачено ${investment} TON за ${selectedGift.name}`);
+            setSelectedGift(null);
+            setInvestment("");
+            setModalOffset(0);
+        } catch (err: any) {
+            alert("Ошибка при оплате: " + err.message);
+        }
     };
 
     useEffect(() => {
@@ -506,3 +533,12 @@ export default function MarketPage() {
         </Page>
     );
 }
+
+/* ==============================
+   🌐 APP WRAPPER
+============================== */
+export const App: React.FC = () => (
+    <TonConnectUIProvider manifestUrl="https://yourdomain.com/tonconnect-manifest.json">
+        <MarketPage />
+    </TonConnectUIProvider>
+);
