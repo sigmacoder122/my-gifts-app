@@ -1,4 +1,4 @@
-// src/ProfilePage.jsx
+// src/ProfilePage.tsx
 import React, { useState, useEffect } from "react";
 import styled, { keyframes, css } from "styled-components";
 import { ArrowRight, Wallet, Plus, Minus } from "lucide-react";
@@ -200,7 +200,6 @@ const InviteButton = styled.button`
   }
 `;
 
-/* ===== Wallet Button ===== */
 const TonWalletButtonStyled = styled.button`
   background: linear-gradient(90deg, #00aaff, #0077ff);
   color: #fff;
@@ -229,11 +228,10 @@ const WalletInfo = styled.div`
   padding: 10px 16px;
 `;
 
-/* ===== Заглушки ===== */
-const mockAvatar = "https://cdn-icons-png.flaticon.com/512/3177/3177440.png";
+/* ===== Заглушка TON Logo ===== */
 const tonLogo = "https://ton.org/download/ton_symbol.png";
 
-/* ===== Компонент Wallet ===== */
+/* ===== Wallet Control Component ===== */
 const WalletControlButton = () => {
     const wallet = useTonWallet();
     const [tonConnectUI] = useTonConnectUI();
@@ -262,8 +260,14 @@ const WalletControlButton = () => {
     );
 };
 
-/* ===== Компонент ProfilePage ===== */
+/* ===== ProfilePage Component ===== */
 const ProfilePage = () => {
+    // Получаем данные пользователя из Telegram Mini App
+    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    const displayName = tgUser ? `${tgUser.first_name} ${tgUser.last_name || ""}` : "@nickname";
+    const avatarUrl = tgUser?.photo_url || "https://cdn-icons-png.flaticon.com/512/3177/3177440.png";
+    const username = tgUser?.username ? `@${tgUser.username}` : displayName;
+
     return (
         <Page>
             <TopRow>
@@ -275,8 +279,8 @@ const ProfilePage = () => {
             </TopRow>
 
             <CenterProfile>
-                <Avatar src={mockAvatar} alt="Avatar" />
-                <Nickname>@nickname</Nickname>
+                <Avatar src={avatarUrl} alt="Avatar" />
+                <Nickname>{username}</Nickname>
             </CenterProfile>
 
             <StatsRow>
